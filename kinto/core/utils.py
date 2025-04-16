@@ -66,7 +66,7 @@ def msec_time():
 
     :rtype: int
     """
-    return int(time.time() * 1000.0)  # floor
+    return time.time() * 1000.0  # floor
 
 
 def classname(obj):
