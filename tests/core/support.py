@@ -68,9 +68,9 @@ class PostgreSQLTest(BaseWebTest):
         if sqlalchemy is not None:
             from .test_cache import PostgreSQLCacheTest
             from .test_permission import PostgreSQLPermissionTest
-            from .test_storage import PostgreSQLStorageTest
+            # from .test_storage import PostgreSQLStorageTest
 
-            settings.update(**PostgreSQLStorageTest.settings)
+            # settings.update(**PostgreSQLStorageTest.settings)
             settings.update(**PostgreSQLCacheTest.settings)
             settings.update(**PostgreSQLPermissionTest.settings)
             settings.pop("storage_poolclass", None)

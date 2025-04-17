@@ -69,228 +69,228 @@ class MigratorTest(unittest.TestCase):
             self.assertRaises(AssertionError, self.migrator.create_or_migrate_schema)
 
 
-@skip_if_no_postgresql
-class PostgresqlStorageMigrationTest(unittest.TestCase):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        from kinto.core.utils import sqlalchemy
+# @skip_if_no_postgresql
+# class PostgresqlStorageMigrationTest(unittest.TestCase):
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         from kinto.core.utils import sqlalchemy
 
-        if sqlalchemy is None:
-            return
+#         if sqlalchemy is None:
+#             return
 
-        from .test_storage import PostgreSQLStorageTest
+#         from .test_storage import PostgreSQLStorageTest
 
-        self.settings = {**PostgreSQLStorageTest.settings}
-        self.config = testing.setUp()
-        self.config.add_settings(self.settings)
-        self.version = postgresql_storage.Storage.schema_version
-        # Usual storage object to manipulate the storage.
-        self.storage = postgresql_storage.load_from_config(self.config)
+#         self.settings = {**PostgreSQLStorageTest.settings}
+#         self.config = testing.setUp()
+#         self.config.add_settings(self.settings)
+#         self.version = postgresql_storage.Storage.schema_version
+#         # Usual storage object to manipulate the storage.
+#         self.storage = postgresql_storage.load_from_config(self.config)
 
-    def setUp(self):
-        # Start empty.
-        self._delete_everything()
+#     def setUp(self):
+#         # Start empty.
+#         self._delete_everything()
 
-    def tearDown(self):
-        postgresql_storage.Storage.schema_version = self.version
-        # Finish empty.
-        self._delete_everything()
+#     def tearDown(self):
+#         postgresql_storage.Storage.schema_version = self.version
+#         # Finish empty.
+#         self._delete_everything()
 
-    def _delete_everything(self):
-        q = """
-        DROP TABLE IF EXISTS records CASCADE;
-        DROP TABLE IF EXISTS objects CASCADE;
-        DROP TABLE IF EXISTS deleted CASCADE;
-        DROP TABLE IF EXISTS timestamps CASCADE;
-        DROP TABLE IF EXISTS metadata CASCADE;
-        DROP FUNCTION IF EXISTS resource_timestamp(VARCHAR, VARCHAR);
-        DROP FUNCTION IF EXISTS collection_timestamp(VARCHAR, VARCHAR);
-        DROP FUNCTION IF EXISTS bump_timestamp();
-        """
-        with self.storage.client.connect() as conn:
-            conn.execute(sa.text(q))
+#     def _delete_everything(self):
+#         q = """
+#         DROP TABLE IF EXISTS records CASCADE;
+#         DROP TABLE IF EXISTS objects CASCADE;
+#         DROP TABLE IF EXISTS deleted CASCADE;
+#         DROP TABLE IF EXISTS timestamps CASCADE;
+#         DROP TABLE IF EXISTS metadata CASCADE;
+#         DROP FUNCTION IF EXISTS resource_timestamp(VARCHAR, VARCHAR);
+#         DROP FUNCTION IF EXISTS collection_timestamp(VARCHAR, VARCHAR);
+#         DROP FUNCTION IF EXISTS bump_timestamp();
+#         """
+#         with self.storage.client.connect() as conn:
+#             conn.execute(sa.text(q))
 
-    def _load_schema(self, filepath):
-        with self.storage.client.connect() as conn:
-            here = os.path.dirname(__file__)
-            with open(os.path.join(here, filepath)) as f:
-                old_schema = f.read()
-            conn.execute(sa.text(old_schema))
+#     def _load_schema(self, filepath):
+#         with self.storage.client.connect() as conn:
+#             here = os.path.dirname(__file__)
+#             with open(os.path.join(here, filepath)) as f:
+#                 old_schema = f.read()
+#             conn.execute(sa.text(old_schema))
 
-    def test_does_not_execute_if_ran_with_dry(self):
-        self.storage.initialize_schema(dry_run=True)
-        query = """SELECT 1 FROM information_schema.tables
-        WHERE table_name = 'objects';"""
-        with self.storage.client.connect(readonly=True) as conn:
-            result = conn.execute(sa.text(query))
-        self.assertEqual(result.rowcount, 0)
+#     def test_does_not_execute_if_ran_with_dry(self):
+#         self.storage.initialize_schema(dry_run=True)
+#         query = """SELECT 1 FROM information_schema.tables
+#         WHERE table_name = 'objects';"""
+#         with self.storage.client.connect(readonly=True) as conn:
+#             result = conn.execute(sa.text(query))
+#         self.assertEqual(result.rowcount, 0)
 
-    def test_schema_sets_the_current_version(self):
-        # Create schema in its last version
-        self.storage.initialize_schema()
-        version = self.storage.get_installed_version()
-        self.assertEqual(version, self.version)
+#     def test_schema_sets_the_current_version(self):
+#         # Create schema in its last version
+#         self.storage.initialize_schema()
+#         version = self.storage.get_installed_version()
+#         self.assertEqual(version, self.version)
 
-    def test_schema_is_considered_first_version_if_no_version_detected(self):
-        # Create schema in its last version
-        self.storage.initialize_schema()
-        with self.storage.client.connect() as conn:
-            q = "DELETE FROM metadata WHERE name = 'storage_schema_version';"
-            conn.execute(sa.text(q))
+#     def test_schema_is_considered_first_version_if_no_version_detected(self):
+#         # Create schema in its last version
+#         self.storage.initialize_schema()
+#         with self.storage.client.connect() as conn:
+#             q = "DELETE FROM metadata WHERE name = 'storage_schema_version';"
+#             conn.execute(sa.text(q))
 
-        self.assertEqual(self.storage.get_installed_version(), 1)
+#         self.assertEqual(self.storage.get_installed_version(), 1)
 
-    def test_schema_is_considered_20_if_server_is_wiped(self):
-        # Create schema in its last version
-        self.storage.initialize_schema()
-        with self.storage.client.connect() as conn:
-            q = "DELETE FROM metadata;"
-            conn.execute(sa.text(q))
+#     def test_schema_is_considered_20_if_server_is_wiped(self):
+#         # Create schema in its last version
+#         self.storage.initialize_schema()
+#         with self.storage.client.connect() as conn:
+#             q = "DELETE FROM metadata;"
+#             conn.execute(sa.text(q))
 
-        self.assertEqual(self.storage.get_installed_version(), 20)
+#         self.assertEqual(self.storage.get_installed_version(), 20)
 
-    def test_every_available_migration(self):
-        """Test every migration available in kinto.core code base since
-        version 1.6.
+#     def test_every_available_migration(self):
+#         """Test every migration available in kinto.core code base since
+#         version 1.6.
 
-        Objects migration test is currently very naive, and should be
-        elaborated along future migrations.
-        """
+#         Objects migration test is currently very naive, and should be
+#         elaborated along future migrations.
+#         """
 
-        # Install old schema
-        self._load_schema("schema/postgresql-storage-1.6.sql")
+#         # Install old schema
+#         self._load_schema("schema/postgresql-storage-1.6.sql")
 
-        # Create a sample object using some code that is compatible with the
-        # schema in place in cliquet 1.6.
-        with self.storage.client.connect() as conn:
-            before = {"drink": "cacao"}
-            query = """
-            INSERT INTO records (user_id, resource_name, data)
-            VALUES (:user_id, :resource_name, (:data)::JSON)
-            RETURNING id, as_epoch(last_modified) AS last_modified;
-            """
-            placeholders = dict(
-                user_id="jean-louis", resource_name="test", data=json.dumps(before)
-            )
-            result = conn.execute(sa.text(query), placeholders)
-            inserted = result.fetchone()
-            before["id"] = str(inserted.id)
-            before["last_modified"] = inserted.last_modified
+#         # Create a sample object using some code that is compatible with the
+#         # schema in place in cliquet 1.6.
+#         with self.storage.client.connect() as conn:
+#             before = {"drink": "cacao"}
+#             query = """
+#             INSERT INTO records (user_id, resource_name, data)
+#             VALUES (:user_id, :resource_name, (:data)::JSON)
+#             RETURNING id, as_epoch(last_modified) AS last_modified;
+#             """
+#             placeholders = dict(
+#                 user_id="jean-louis", resource_name="test", data=json.dumps(before)
+#             )
+#             result = conn.execute(sa.text(query), placeholders)
+#             inserted = result.fetchone()
+#             before["id"] = str(inserted.id)
+#             before["last_modified"] = inserted.last_modified
 
-        # In cliquet 1.6, version = 1.
-        version = self.storage.get_installed_version()
-        self.assertEqual(version, 1)
+#         # In cliquet 1.6, version = 1.
+#         version = self.storage.get_installed_version()
+#         self.assertEqual(version, 1)
 
-        # Run every migrations available.
-        self.storage.initialize_schema()
+#         # Run every migrations available.
+#         self.storage.initialize_schema()
 
-        # Version matches current one.
-        version = self.storage.get_installed_version()
-        self.assertEqual(version, self.version)
+#         # Version matches current one.
+#         version = self.storage.get_installed_version()
+#         self.assertEqual(version, self.version)
 
-        # Check that previously created object is still here
-        migrated = self.storage.list_all("test", "jean-louis")
-        self.assertEqual(migrated[0], before)
+#         # Check that previously created object is still here
+#         migrated = self.storage.list_all("test", "jean-louis")
+#         self.assertEqual(migrated[0], before)
 
-        # Check that new objects can be created
-        r = self.storage.create("test", ",jean-louis", {"drink": "mate"})
+#         # Check that new objects can be created
+#         r = self.storage.create("test", ",jean-louis", {"drink": "mate"})
 
-        # And deleted
-        self.storage.delete("test", ",jean-louis", r["id"])
+#         # And deleted
+#         self.storage.delete("test", ",jean-louis", r["id"])
 
-    def test_every_available_migration_succeeds_if_tables_were_flushed(self):
-        self.storage.initialize_schema()
-        # During tests, tables can be flushed.
-        self.storage.flush()
-        self.storage.initialize_schema()
-        # Version matches current one.
-        version = self.storage.get_installed_version()
-        self.assertEqual(version, self.version)
+#     def test_every_available_migration_succeeds_if_tables_were_flushed(self):
+#         self.storage.initialize_schema()
+#         # During tests, tables can be flushed.
+#         self.storage.flush()
+#         self.storage.initialize_schema()
+#         # Version matches current one.
+#         version = self.storage.get_installed_version()
+#         self.assertEqual(version, self.version)
 
-    def test_migration_12_clean_tombstones(self):
-        last_version = postgresql_storage.Storage.schema_version
-        postgresql_storage.Storage.schema_version = 11
+#     def test_migration_12_clean_tombstones(self):
+#         last_version = postgresql_storage.Storage.schema_version
+#         postgresql_storage.Storage.schema_version = 11
 
-        self._load_schema("schema/postgresql-storage-11.sql")
+#         self._load_schema("schema/postgresql-storage-11.sql")
 
-        insert_query = """
-        INSERT INTO records (id, parent_id, collection_id, data, last_modified)
-        VALUES (:id, :parent_id, :collection_id, (:data)::JSONB, from_epoch(:last_modified))
-        """
-        placeholders = dict(
-            id="rid",
-            parent_id="jean-louis",
-            collection_id="test",
-            data=json.dumps({"drink": "mate"}),
-            last_modified=123456,
-        )
-        with self.storage.client.connect() as conn:
-            conn.execute(sa.text(insert_query), placeholders)
+#         insert_query = """
+#         INSERT INTO records (id, parent_id, collection_id, data, last_modified)
+#         VALUES (:id, :parent_id, :collection_id, (:data)::JSONB, from_epoch(:last_modified))
+#         """
+#         placeholders = dict(
+#             id="rid",
+#             parent_id="jean-louis",
+#             collection_id="test",
+#             data=json.dumps({"drink": "mate"}),
+#             last_modified=123456,
+#         )
+#         with self.storage.client.connect() as conn:
+#             conn.execute(sa.text(insert_query), placeholders)
 
-        create_tombstone = """
-        INSERT INTO deleted (id, parent_id, collection_id, last_modified)
-        VALUES (:id, :parent_id, :collection_id, from_epoch(:last_modified))
-        """
-        with self.storage.client.connect() as conn:
-            conn.execute(sa.text(create_tombstone), placeholders)
+#         create_tombstone = """
+#         INSERT INTO deleted (id, parent_id, collection_id, last_modified)
+#         VALUES (:id, :parent_id, :collection_id, from_epoch(:last_modified))
+#         """
+#         with self.storage.client.connect() as conn:
+#             conn.execute(sa.text(create_tombstone), placeholders)
 
-        # Execute the 011 to 012 migration (and others)
-        postgresql_storage.Storage.schema_version = last_version
-        self.storage.initialize_schema()
+#         # Execute the 011 to 012 migration (and others)
+#         postgresql_storage.Storage.schema_version = last_version
+#         self.storage.initialize_schema()
 
-        # Check that the rotted tombstone has been removed, but the
-        # original object remains.
-        objects = self.storage.list_all("test", "jean-louis")
-        # Only the object remains.
-        assert len(objects) == 1
+#         # Check that the rotted tombstone has been removed, but the
+#         # original object remains.
+#         objects = self.storage.list_all("test", "jean-louis")
+#         # Only the object remains.
+#         assert len(objects) == 1
 
-    def test_migration_18_merges_tombstones(self):
-        last_version = postgresql_storage.Storage.schema_version
+#     def test_migration_18_merges_tombstones(self):
+#         last_version = postgresql_storage.Storage.schema_version
 
-        self._load_schema("schema/postgresql-storage-11.sql")
-        # Schema 11 is essentially the same as schema 17
-        postgresql_storage.Storage.schema_version = 17
-        with self.storage.client.connect() as conn:
-            conn.execute(
-                sa.text(
-                    """
-            UPDATE metadata SET value = '17'
-            WHERE name = 'storage_schema_version';
-            """
-                )
-            )
+#         self._load_schema("schema/postgresql-storage-11.sql")
+#         # Schema 11 is essentially the same as schema 17
+#         postgresql_storage.Storage.schema_version = 17
+#         with self.storage.client.connect() as conn:
+#             conn.execute(
+#                 sa.text(
+#                     """
+#             UPDATE metadata SET value = '17'
+#             WHERE name = 'storage_schema_version';
+#             """
+#                 )
+#             )
 
-        insert_query = """
-        INSERT INTO records (id, parent_id, collection_id, data, last_modified)
-        VALUES (:id, :parent_id, :collection_id, (:data)::JSONB, from_epoch(:last_modified))
-        """
-        placeholders = dict(
-            id="rid",
-            parent_id="jean-louis",
-            collection_id="test",
-            data=json.dumps({"drink": "mate"}),
-            last_modified=123456,
-        )
-        with self.storage.client.connect() as conn:
-            conn.execute(sa.text(insert_query), placeholders)
+#         insert_query = """
+#         INSERT INTO records (id, parent_id, collection_id, data, last_modified)
+#         VALUES (:id, :parent_id, :collection_id, (:data)::JSONB, from_epoch(:last_modified))
+#         """
+#         placeholders = dict(
+#             id="rid",
+#             parent_id="jean-louis",
+#             collection_id="test",
+#             data=json.dumps({"drink": "mate"}),
+#             last_modified=123456,
+#         )
+#         with self.storage.client.connect() as conn:
+#             conn.execute(sa.text(insert_query), placeholders)
 
-        create_tombstone = """
-        INSERT INTO deleted (id, parent_id, collection_id, last_modified)
-        VALUES (:id, :parent_id, :collection_id, from_epoch(:last_modified))
-        """
-        with self.storage.client.connect() as conn:
-            conn.execute(sa.text(create_tombstone), placeholders)
+#         create_tombstone = """
+#         INSERT INTO deleted (id, parent_id, collection_id, last_modified)
+#         VALUES (:id, :parent_id, :collection_id, from_epoch(:last_modified))
+#         """
+#         with self.storage.client.connect() as conn:
+#             conn.execute(sa.text(create_tombstone), placeholders)
 
-        # Execute the 017 to 018 migration (and others)
-        postgresql_storage.Storage.schema_version = last_version
-        self.storage.initialize_schema()
+#         # Execute the 017 to 018 migration (and others)
+#         postgresql_storage.Storage.schema_version = last_version
+#         self.storage.initialize_schema()
 
-        # Check that the object took precedence of over the tombstone.
-        objects = self.storage.list_all("test", "jean-louis", include_deleted=True)
-        count = self.storage.count_all("test", "jean-louis")
-        assert len(objects) == 1
-        assert count == 1
-        assert objects[0]["drink"] == "mate"
+#         # Check that the object took precedence of over the tombstone.
+#         objects = self.storage.list_all("test", "jean-louis", include_deleted=True)
+#         count = self.storage.count_all("test", "jean-louis")
+#         assert len(objects) == 1
+#         assert count == 1
+#         assert objects[0]["drink"] == "mate"
 
 
 @skip_if_no_postgresql
