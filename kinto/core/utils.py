@@ -70,11 +70,11 @@ def msec_time():
 
 
 def microsec_time():
-    """Return current epoch time in milliseconds.
+    """Return current epoch time in microseconds.
 
     :rtype: int
     """
-    return int(time.time() * 100000.0)  # floor
+    return time.time_ns() // 10_000 # floor
 
 
 def classname(obj):
