@@ -6,18 +6,24 @@ SET client_min_messages TO ERROR;
 -- Convert timestamps to milliseconds epoch integer
 --
 CREATE OR REPLACE FUNCTION as_epoch(ts TIMESTAMP) RETURNS BIGINT AS $$
+DECLARE
+    base TIMESTAMP := TIMESTAMP '2020-01-01 00:00:00';
 BEGIN
-    RETURN (EXTRACT(EPOCH FROM ts) * 1000000)::BIGINT;
+    RETURN ROUND((EXTRACT(EPOCH FROM ts) - EXTRACT(EPOCH FROM base)) * 100000)::BIGINT;
 END;
 $$ LANGUAGE plpgsql
 IMMUTABLE;
 
+
 CREATE OR REPLACE FUNCTION from_epoch(epoch BIGINT) RETURNS TIMESTAMP AS $$
+DECLARE
+    base TIMESTAMP := TIMESTAMP '2020-01-01 00:00:00';
 BEGIN
-    RETURN TIMESTAMP WITH TIME ZONE 'epoch' + epoch * INTERVAL '1 microsecond';
+    RETURN base + (epoch * INTERVAL '10 microseconds');
 END;
 $$ LANGUAGE plpgsql
 IMMUTABLE;
+
 
 --
 -- Actual records

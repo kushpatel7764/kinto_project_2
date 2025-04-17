@@ -1,9 +1,12 @@
 CREATE OR REPLACE FUNCTION from_epoch(epoch BIGINT) RETURNS TIMESTAMP AS $$
+DECLARE
+    base TIMESTAMP := TIMESTAMP '2020-01-01 00:00:00';
 BEGIN
-    RETURN TIMESTAMP WITH TIME ZONE 'epoch' + epoch * INTERVAL '1 millisecond';
+    RETURN base + (epoch * INTERVAL '10 microseconds');
 END;
 $$ LANGUAGE plpgsql
 IMMUTABLE;
+
 
 
 CREATE OR REPLACE FUNCTION bump_timestamp()
@@ -27,7 +30,7 @@ BEGIN
     IF NEW.last_modified IS NULL THEN
         current := clock_timestamp();
         IF previous >= current THEN
-            current := previous + INTERVAL '1 milliseconds';
+            current := previous + INTERVAL '10 microseconds';
         END IF;
         NEW.last_modified := current;
     END IF;
