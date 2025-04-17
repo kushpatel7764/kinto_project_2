@@ -816,10 +816,10 @@ class TimestampsTest:
 
     def test_the_timestamp_are_based_on_real_time_microseconds(self):
         before = utils.microsec_time()
-        time.sleep(0.00002)  # 20 microsec
+        time.sleep(0.003)  # 2 mill
         obj = self.create_object()
         now = obj["last_modified"]
-        time.sleep(0.00002)  # 20 microsec
+        time.sleep(0.003)  # 2 mill
         after = utils.microsec_time()
         self.assertTrue(before < now < after, f"{before} < {now} < {after}")
 
