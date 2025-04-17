@@ -1,2 +1,1 @@
-import time
-print(time.time_ns() // 1000000)
+Delete this file
