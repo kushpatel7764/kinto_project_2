@@ -74,7 +74,7 @@ def microsec_time():
 
     :rtype: int
     """
-    return time.time_ns() // 10_000 # floor
+    return time.time_ns() // 1000000 # floor
 
 
 def classname(obj):
