@@ -5,14 +5,14 @@ SET client_min_messages TO ERROR;
 --
 -- Convert timestamps to milliseconds epoch integer
 --
-CREATE OR REPLACE FUNCTION as_epoch(ts TIMESTAMP) RETURNS BIGINT AS $$
+CREATE OR REPLACE FUNCTION as_epoch(ts TIMESTAMP) RETURNS NUMERIC AS $$
 BEGIN
-    RETURN (EXTRACT(EPOCH FROM ts) * 10000.0)::BIGINT;
+    RETURN ROUND(EXTRACT(EPOCH FROM ts) * 1000.0);
 END;
 $$ LANGUAGE plpgsql
 IMMUTABLE;
 
-CREATE OR REPLACE FUNCTION from_epoch(epoch BIGINT) RETURNS TIMESTAMP AS $$
+CREATE OR REPLACE FUNCTION from_epoch(epoch NUMERIC) RETURNS TIMESTAMP AS $$
 BEGIN
     RETURN TIMESTAMP WITH TIME ZONE 'epoch' + epoch * INTERVAL '1 millisecond';
 END;
@@ -64,8 +64,8 @@ DROP TRIGGER IF EXISTS tgr_objects_last_modified ON objects;
 CREATE OR REPLACE FUNCTION bump_timestamp()
 RETURNS trigger AS $$
 DECLARE
-    previous BIGINT;
-    current BIGINT;
+    previous NUMERIC;
+    current NUMERIC;
 BEGIN
     previous := NULL;
     WITH existing_timestamps AS (
