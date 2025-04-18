@@ -30,7 +30,7 @@ ENV KINTO_INI=/etc/kinto/kinto.ini \
     PATH="/opt/venv/bin:$PATH" \
     PROMETHEUS_MULTIPROC_DIR="/tmp/metrics"
 
-RUN kinto init --ini $KINTO_INI --host 0.0.0.0 --backend=memory --cache-backend=memory
+RUN kinto init --ini $KINTO_INI --host 0.0.0.0 --backend=postgresql --cache-backend=postgresql
 
 WORKDIR /app
 USER app

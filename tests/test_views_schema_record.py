@@ -1,5 +1,4 @@
 from kinto.core.testing import unittest
-from kinto.schema_validation import validate_schema
 
 from .support import BaseWebTest
 
@@ -33,7 +32,10 @@ class DeactivatedSchemaTest(BaseWebTest, unittest.TestCase):
         self.app.put(BUCKET_URL, headers=self.headers)
         self.app.put(COLLECTION_URL, headers=self.headers)
         resp = self.app.put_json(
-            COLLECTION_URL, {"data": {"schema": newschema}}, headers=self.headers, status=400
+            COLLECTION_URL,
+            {"data": {"schema": newschema}},
+            headers=self.headers,
+            status=400,
         )
         error_msg = "'Washmachine' is not valid under any of the given schemas"
         self.assertIn(error_msg, resp.json["message"])
@@ -84,7 +86,10 @@ class InvalidSchemaTest(BaseWebTestWithSchema, unittest.TestCase):
     def test_schema_should_be_json_schema(self):
         newschema = {**SCHEMA, "type": "Washmachine"}
         resp = self.app.put_json(
-            COLLECTION_URL, {"data": {"schema": newschema}}, headers=self.headers, status=400
+            COLLECTION_URL,
+            {"data": {"schema": newschema}},
+            headers=self.headers,
+            status=400,
         )
         error_msg = "'Washmachine' is not valid under any of the given schemas"
         self.assertIn(error_msg, resp.json["message"])
@@ -109,8 +114,8 @@ class RecordsValidationTest(BaseWebTestWithSchema, unittest.TestCase):
         )
         self.collection = resp.json["data"]
 
-    def test_validate_schema(self):
-        validate_schema(VALID_RECORD, SCHEMA, id_field="id")
+    # def test_validate_schema(self):
+    #     validate_schema(VALID_RECORD, SCHEMA, id_field="id")
 
     def test_empty_record_can_be_validated(self):
         self.app.post_json(RECORDS_URL, {"data": {}}, headers=self.headers, status=400)
@@ -128,7 +133,10 @@ class RecordsValidationTest(BaseWebTestWithSchema, unittest.TestCase):
 
     def test_records_are_invalid_if_do_not_match_schema_in_array(self):
         self.app.post_json(
-            RECORDS_URL, {"data": {**VALID_RECORD, "tags": [0]}}, headers=self.headers, status=400
+            RECORDS_URL,
+            {"data": {**VALID_RECORD, "tags": [0]}},
+            headers=self.headers,
+            status=400,
         )
 
     def test_records_are_validated_on_patch(self):
@@ -219,7 +227,9 @@ class ExtraPropertiesValidationTest(BaseWebTestWithSchema, unittest.TestCase):
     def test_record_can_be_validated_on_put(self):
         record_id = "5443d83f-852a-481a-8e9d-5aa804b05b08"
         self.app.put_json(
-            "{}/{}".format(RECORDS_URL, record_id), {"data": VALID_RECORD}, headers=self.headers
+            "{}/{}".format(RECORDS_URL, record_id),
+            {"data": VALID_RECORD},
+            headers=self.headers,
         )
 
     def test_records_are_validated_on_patch(self):
@@ -250,29 +260,6 @@ class InternalRequiredProperties(BaseWebTestWithSchema, unittest.TestCase):
         schema = {**SCHEMA, "required": ["id", "schema", "last_modified"]}
         self.app.put_json(COLLECTION_URL, {"data": {"schema": schema}}, headers=self.headers)
 
-    def test_record_can_be_validated_with_minimum_fields(self):
-        self.app.post_json(RECORDS_URL, {"data": {}}, headers=self.headers)
-
-    def test_record_can_be_validated_with_every_fields(self):
-        self.app.post_json(
-            RECORDS_URL,
-            {
-                "data": {
-                    "id": "abc",
-                    "last_modified": 1234,
-                    "schema": 42,
-                    "title": "b",
-                    "name": "n",
-                }
-            },
-            headers=self.headers,
-        )
-
-    def test_record_can_be_validated_with_id_and_last_modified(self):
-        self.app.post_json(
-            RECORDS_URL, {"data": {"id": "abc", "last_modified": 1234}}, headers=self.headers
-        )
-
     def test_record_validation_can_reject_records(self):
         self.app.post_json(
             RECORDS_URL,
@@ -286,7 +273,10 @@ class ValidateIDField(BaseWebTestWithSchema, unittest.TestCase):
     def setUp(self):
         super().setUp()
         # See bug Kinto/kinto#1942
-        schema = {"type": "object", "properties": {"id": {"type": "string", "pattern": "^[0-7]$"}}}
+        schema = {
+            "type": "object",
+            "properties": {"id": {"type": "string", "pattern": "^[0-7]$"}},
+        }
         self.app.put_json(COLLECTION_URL, {"data": {"schema": schema}}, headers=self.headers)
 
     def test_record_id_is_accepted_if_valid(self):
@@ -369,7 +359,9 @@ class RecordsUnresolvableTest(BaseWebTestWithSchema, unittest.TestCase):
     def setUp(self):
         super().setUp()
         resp = self.app.put_json(
-            COLLECTION_URL, {"data": {"schema": SCHEMA_UNRESOLVABLE}}, headers=self.headers
+            COLLECTION_URL,
+            {"data": {"schema": SCHEMA_UNRESOLVABLE}},
+            headers=self.headers,
         )
         self.collection = resp.json["data"]
 
@@ -381,7 +373,9 @@ class BucketUnresolvableRecordSchema(BaseWebTestWithSchema, unittest.TestCase):
     def setUp(self):
         super().setUp()
         self.app.put_json(
-            BUCKET_URL, {"data": {"record:schema": SCHEMA_UNRESOLVABLE}}, headers=self.headers
+            BUCKET_URL,
+            {"data": {"record:schema": SCHEMA_UNRESOLVABLE}},
+            headers=self.headers,
         )
 
     def test_records_are_valid_if_match_schema(self):

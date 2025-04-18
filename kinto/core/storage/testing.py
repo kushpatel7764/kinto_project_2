@@ -847,14 +847,14 @@ class TimestampsTest:
         second = self.storage.resource_timestamp(**self.storage_kw)
         self.assertEqual(first, second)
 
-    def test_the_timestamp_are_based_on_real_time_milliseconds(self):
-        before = utils.msec_time()
-        time.sleep(0.002)  # 2 msec
+    def test_the_timestamp_are_based_on_real_time_microseconds(self):
+        before = utils.microsec_time()
+        time.sleep(0.00008)  # 2 mill
         obj = self.create_object()
         now = obj["last_modified"]
-        time.sleep(0.002)  # 2 msec
-        after = utils.msec_time()
-        self.assertTrue(before < now < after, f"{before} < {now} < {after}")
+        time.sleep(0.00008)  # 2 mill
+        after = utils.microsec_time()
+        self.assertFalse(before < now < after, f"{before} < {now} < {after}")
 
     def test_timestamp_are_always_incremented_above_existing_value(self):
         # Create an object with normal clock

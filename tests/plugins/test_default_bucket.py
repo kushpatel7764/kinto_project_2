@@ -24,6 +24,21 @@ class DefaultBucketViewTest(FormattedErrorMixin, DefaultBucketWebTest):
     bucket_url = "/buckets/default"
     collection_url = "/buckets/default/collections/tasks"
 
+    def test_unauthenticated_bucket_access_raises_json_401(self):
+        # If this test runs individual it seems to work and the user remains unauthenticated however,
+        # if this test runs through class the DefaultBucketViewTest(FormattedErrorMixin, DefaultBucketWebTest) clas then
+        # it does not work because the user is automatically authenticated. To fix this issue the line below is added
+        # it ensures that the user is not automatically authenticated.
+        self.app.authorization = None
+        resp = self.app.get(self.bucket_url, status=401)
+        # Assert status code
+        self.assertEqual(resp.status_code, 401)
+        # Assert the message is as expected
+        self.assertIn("message", resp.json)
+        self.assertEqual(
+            resp.json["message"], "Please authenticate yourself to use this endpoint."
+        )
+
     def test_default_bucket_exists_and_has_user_id(self):
         bucket = self.app.get(self.bucket_url, headers=self.headers)
         result = bucket.json
@@ -94,12 +109,6 @@ class DefaultBucketViewTest(FormattedErrorMixin, DefaultBucketWebTest):
         )
         record_id = "{}/records/{}".format(self.collection_url, resp.json["data"]["id"])
         resp = self.app.get(record_id, headers=get_user_headers("alice"), status=404)
-
-    def test_unauthenticated_bucket_access_raises_json_401(self):
-        resp = self.app.get(self.bucket_url, status=401)
-        self.assertEqual(
-            resp.json["message"], "Please authenticate yourself to use this endpoint."
-        )
 
     def test_bucket_id_is_an_uuid_with_dashes(self):
         bucket = self.app.get(self.bucket_url, headers=self.headers)
@@ -291,6 +300,30 @@ class DefaultBucketViewTest(FormattedErrorMixin, DefaultBucketWebTest):
         records_url = "/buckets/default/collections/foo/records/bar/"
         resp = self.app.get(records_url, headers=self.headers, status=307)
         assert resp.headers["Location"].endswith("/buckets/default/collections/foo/records/bar")
+
+    # Mock handler to return a dummy response for successful request
+    def test_unauthenticated_user_is_rejected(self):
+        # Simulate a request without authentication
+        self.app.authorization = None
+        response = self.app.get("/buckets/default", status=401)
+        assert response.json["message"] == "Please authenticate yourself to use this endpoint."
+
+    def test_path_stays_same_if_already_default(self):
+        # Authenticated request to the default bucket
+        self.app.authorization = (
+            "Basic",
+            ("admin", "adminpass"),
+        )  # or use your actual test credentials
+        response = self.app.get("/buckets/default", status=200)
+        assert "/buckets/default" in response.request.url
+
+    def test_bucket_id_is_rewritten_to_default(self):
+        settings = self.app.app.registry.settings
+        default_bucket_hmac_secret = settings["default_bucket_hmac_secret"]
+        bucket_id = hmac_digest(default_bucket_hmac_secret, self.principal)[:32]
+
+        response = self.app.get(f"/buckets/{bucket_id}", headers=self.headers)
+        assert "buckets/default" in response.request.url
 
 
 class HelloViewTest(DefaultBucketWebTest):
