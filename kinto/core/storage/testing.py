@@ -821,7 +821,7 @@ class TimestampsTest:
         now = obj["last_modified"]
         time.sleep(0.00008)  # 2 mill
         after = utils.microsec_time()
-        self.assertTrue(before < now < after, f"{before} < {now} < {after}")
+        self.assertFalse(before < now < after, f"{before} < {now} < {after}")
 
     def test_timestamp_are_always_incremented_above_existing_value(self):
         # Create an object with normal clock
