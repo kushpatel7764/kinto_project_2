@@ -3,6 +3,7 @@ on:
     branches:
       - main
       - kush
+      - Thomas
   pull_request:
 
 name: Unit Testing
