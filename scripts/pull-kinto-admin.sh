@@ -1,18 +1,12 @@
 #!/bin/bash
-set -euxo pipefail  # Enable debugging, error handling, and pipeline fail detection
+set -euo pipefail
 
-# Read VERSION and clean up any CRLF characters
-VERSION=$(cat kinto/plugins/admin/VERSION | tr -d '\r')
+VERSION=$(cat kinto/plugins/admin/VERSION)
 TAG="v${VERSION}"
 
-# Download and unzip the release
-echo "Downloading Kinto Admin version ${TAG}..."
+# download and unzip release
 curl -OL "https://github.com/Kinto/kinto-admin/releases/download/${TAG}/kinto-admin-release.tar"
-
-# Remove old build directory if it exists, then create a new one
-rm -rf ./kinto/plugins/admin/build || echo "admin/build folder doesn't exist yet"
-mkdir -p ./kinto/plugins/admin/build
-
-# Extract the tar file and clean up
+rm -r ./kinto/plugins/admin/build || echo "admin/build folder doesn't exist yet"
+mkdir ./kinto/plugins/admin/build
 tar -xf kinto-admin-release.tar -C ./kinto/plugins/admin/build && rm kinto-admin-release.tar
-echo "$VERSION" > ./kinto/plugins/admin/build/VERSION  # Version info saved
+echo "$VERSION" > ./kinto/plugins/admin/build/VERSION # will not be needed after kinto-admin@8400176 (version 3.0.4?)
