@@ -24,14 +24,18 @@ class MigratorTest(unittest.TestCase):
 
     def test_schema_is_created_if_no_version(self, execute_sql):
         with mock.patch.object(self.migrator, "create_schema") as create_schema:
-            with mock.patch.object(self.migrator, "get_installed_version") as installed_version:
+            with mock.patch.object(
+                self.migrator, "get_installed_version"
+            ) as installed_version:
                 installed_version.return_value = None
                 self.migrator.create_or_migrate_schema()
         self.assertTrue(create_schema.called)
 
     def test_schema_is_not_touched_if_already_current(self, execute_sql):
         # Patch to keep track of SQL files executed.
-        with mock.patch.object(self.migrator, "get_installed_version") as installed_version:
+        with mock.patch.object(
+            self.migrator, "get_installed_version"
+        ) as installed_version:
             installed_version.return_value = 6
             self.migrator.create_or_migrate_schema()
         self.assertFalse(execute_sql.called)
@@ -41,7 +45,9 @@ class MigratorTest(unittest.TestCase):
         versions = [6, 5, 4, 3, 3]
         self.migrator.get_installed_version = lambda: versions.pop()
 
-    def test_migration_file_is_executed_for_every_intermediary_version(self, execute_sql):
+    def test_migration_file_is_executed_for_every_intermediary_version(
+        self, execute_sql
+    ):
         self._walk_from_3_to_6()
 
         self.migrator.create_or_migrate_schema()
@@ -58,7 +64,9 @@ class MigratorTest(unittest.TestCase):
         with mock.patch("kinto.core.storage.postgresql.migrator.logger") as mocked:
             self.migrator.create_or_migrate_schema(dry_run=True)
 
-        output = "".join([repr(call) for call in mocked.info.call_args_list]).replace("\\\\", "\\")
+        output = "".join([repr(call) for call in mocked.info.call_args_list]).replace(
+            "\\\\", "\\"
+        )
         self.assertIn(os.path.join("migrations", "migration_003_004.sql"), output)
         self.assertIn(os.path.join("migrations", "migration_004_005.sql"), output)
         self.assertIn(os.path.join("migrations", "migration_005_006.sql"), output)
@@ -398,7 +406,9 @@ class PostgresqlPermissionMigrationTest(unittest.TestCase):
 
     def test_schema_creation_leaves_at_max_version(self):
         self.permission.initialize_schema()
-        self.assertEqual(self.permission.get_installed_version(), self.permission.schema_version)
+        self.assertEqual(
+            self.permission.get_installed_version(), self.permission.schema_version
+        )
 
     def test_runs_initialize_schema_if_using_it_fails(self):
         self.permission.initialize_schema()
@@ -457,14 +467,17 @@ class PostgresqlPermissionMigrationTest(unittest.TestCase):
             ["remy", "admin", "system.Authenticated"]
         )
         self.assertEqual(
-            remy_objects, {"sailboat": set(["write"]), "sailboat/log": set(["read", "write"])}
+            remy_objects,
+            {"sailboat": set(["write"]), "sailboat/log": set(["read", "write"])},
         )
 
         # Check that new objects can be created
         self.permission.add_user_principal("ethan", "crew")
 
         # And deleted
-        self.permission.remove_principal_from_ace("sailboat/log", "read", "system.Authenticated")
+        self.permission.remove_principal_from_ace(
+            "sailboat/log", "read", "system.Authenticated"
+        )
 
 
 @skip_if_no_postgresql
