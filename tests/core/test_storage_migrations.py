@@ -366,10 +366,12 @@ class PostgresqlStorageMigrationTest(unittest.TestCase):
             original_ts = "2020-01-01 00:00:01"  # 1 second into 2020
             # Get its epoch using as_epoch
             old_epoch = conn.execute(
-                """
+                sa.text(
+                    """
                 SELECT as_epoch(TIMESTAMP :ts)
             """,
-                {"ts": original_ts},
+                    {"ts": original_ts},
+                )
             ).fetchone()[0]
 
             # Pass that epoch to from_epoch and get back the timestamp
