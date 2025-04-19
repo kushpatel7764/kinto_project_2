@@ -318,7 +318,7 @@ class PostgresqlStorageMigrationTest(unittest.TestCase):
 
         # Re-run the same as_epoch call with same timestamp after migration
         with self.storage.client.connect() as conn:
-            result = conn.execute("SELECT as_epoch(TIMESTAMP '2020-01-01 00:00:01')").fetchone()
+            result = conn.execute(sa.text("SELECT as_epoch(TIMESTAMP '2020-01-01 00:00:01')")).fetchone()
             new_epoch = result[0]
 
         # Verify the result matches expected logic (based on new function)
