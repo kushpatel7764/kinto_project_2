@@ -331,7 +331,6 @@ class PostgresqlStorageMigrationTest(unittest.TestCase):
         # self.assertNotEqual(old_epoch, new_epoch)
 
 
-
 @skip_if_no_postgresql
 class PostgresqlPermissionMigrationTest(unittest.TestCase):
     def __init__(self, *args, **kw):
