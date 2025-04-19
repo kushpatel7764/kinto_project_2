@@ -326,7 +326,6 @@ class PostgresqlStorageMigrationTest(unittest.TestCase):
 
         # Verify the result matches expected logic (based on new function)
         self.assertEqual(new_epoch, 100000)  # or whatever your new expected result is
-
         # Optionally: check that old value != new if the function logic changed
         # self.assertNotEqual(old_epoch, new_epoch)
 
