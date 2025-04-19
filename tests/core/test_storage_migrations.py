@@ -293,7 +293,6 @@ class PostgresqlStorageMigrationTest(unittest.TestCase):
         assert objects[0]["drink"] == "mate"
 
     def test_as_epoch_function_updated_in_migration(self):
-        """Test that the updated as_epoch() function behaves as expected after migration."""
         # Load old schema from cliquet 1.6 (before your new as_epoch logic)
         self._load_schema("schema/postgresql-storage-1.6.sql")
 
@@ -327,7 +326,7 @@ class PostgresqlStorageMigrationTest(unittest.TestCase):
         # Verify the result matches expected logic (based on new function)
         self.assertEqual(new_epoch, 100000)  # or whatever your new expected result is
         # Optionally: check that old value != new if the function logic changed
-        # self.assertNotEqual(old_epoch, new_epoch) 
+        # self.assertNotEqual(old_epoch, new_epoch)
 
 
 @skip_if_no_postgresql
