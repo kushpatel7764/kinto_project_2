@@ -312,7 +312,7 @@ class PostgresqlStorageMigrationTest(unittest.TestCase):
                 data=json.dumps({"test": "pre-migration"}),
             )
             result = conn.execute(sa.text(query), placeholders)
-            old_epoch = result.fetchone().epoch_value
+            # old_epoch = result.fetchone().epoch_value
 
         # Apply all migrations (your updated as_epoch will be in effect)
         self.storage.initialize_schema()
