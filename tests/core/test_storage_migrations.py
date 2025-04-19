@@ -369,16 +369,18 @@ class PostgresqlStorageMigrationTest(unittest.TestCase):
                 sa.text(
                     """
                 SELECT as_epoch(TIMESTAMP :ts)
-            """),
-                    {"ts": original_ts},
+            """
+                ),
+                {"ts": original_ts},
             ).fetchone()[0]
 
             # Pass that epoch to from_epoch and get back the timestamp
             restored_ts = conn.execute(
                 sa.text(
-                """
+                    """
                 SELECT from_epoch(:epoch)
-            """),
+            """
+                ),
                 {"epoch": old_epoch},
             ).fetchone()[0]
 
