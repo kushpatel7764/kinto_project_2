@@ -292,42 +292,6 @@ class PostgresqlStorageMigrationTest(unittest.TestCase):
         assert count == 1
         assert objects[0]["drink"] == "mate"
 
-    def test_as_epoch_function_updated_in_migration(self):
-        # Load old schema from cliquet 1.6 (before your new as_epoch logic)
-        self._load_schema("schema/postgresql-storage-1.6.sql")
-
-        # Insert a known timestamped record before migration
-        with self.storage.client.connect() as conn:
-            query = """
-            INSERT INTO records (user_id, resource_name, last_modified, data)
-            VALUES (:user_id, :resource_name, :last_modified, (:data)::JSON)
-            RETURNING as_epoch(last_modified) AS epoch_value;
-            """
-            known_ts = "2020-01-01 00:00:01"  # 1 second after base
-            placeholders = dict(
-                user_id="ana",
-                resource_name="test",
-                last_modified=known_ts,
-                data=json.dumps({"test": "pre-migration"}),
-            )
-            result = conn.execute(sa.text(query), placeholders)
-            # old_epoch = result.fetchone().epoch_value
-
-        # Apply all migrations (your updated as_epoch will be in effect)
-        self.storage.initialize_schema()
-
-        # Re-run the same as_epoch call with same timestamp after migration
-        with self.storage.client.connect() as conn:
-            result = conn.execute(
-                "SELECT as_epoch(TIMESTAMP '2020-01-01 00:00:01')"
-            ).fetchone()
-            new_epoch = result[0]
-
-        # Verify the result matches expected logic (based on new function)
-        self.assertEqual(new_epoch, 100000)  # or whatever your new expected result is
-        # Optionally: check that old value != new if the function logic changed
-        # self.assertNotEqual(old_epoch, new_epoch)
-
 
 @skip_if_no_postgresql
 class PostgresqlPermissionMigrationTest(unittest.TestCase):
