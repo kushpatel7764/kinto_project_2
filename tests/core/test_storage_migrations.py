@@ -293,7 +293,6 @@ class PostgresqlStorageMigrationTest(unittest.TestCase):
         assert objects[0]["drink"] == "mate"
 
     def test_as_epoch_function1_6_returns_every_10_microsecond(self):
-        # Load old schema from cliquet 1.6 (before your new as_epoch logic)
         self._load_schema("schema/postgresql-storage-1.6.sql")
 
         # Apply all migrations
@@ -310,6 +309,37 @@ class PostgresqlStorageMigrationTest(unittest.TestCase):
 
     def test_as_epoch_function1_6_returns_proper_timestamp_value(self):
         self._load_schema("schema/postgresql-storage-1.6.sql")
+
+        self.storage.initialize_schema()
+
+        with self.storage.client.connect() as conn:
+            result = conn.execute(
+                sa.text("SELECT as_epoch(TIMESTAMP '2024-01-01 00:00:01')")
+            ).fetchone()
+            new_epoch = result[0]
+
+        expected_epoch = 126230401 * 100000
+
+        # Verify the result matches expected logic
+        self.assertEqual(new_epoch, expected_epoch)
+
+    def test_as_epoch_function11_returns_every_10_microsecond(self):
+        self._load_schema("schema/postgresql-storage-11.sql")
+
+        # Apply all migrations
+        self.storage.initialize_schema()
+
+        with self.storage.client.connect() as conn:
+            result = conn.execute(
+                sa.text("SELECT as_epoch(TIMESTAMP '2020-01-01 00:00:01')")
+            ).fetchone()
+            new_epoch = result[0]
+
+        # Verify the result matches expected logic
+        self.assertEqual(new_epoch, 100000)
+
+    def test_as_epoch_function11_returns_proper_timestamp_value(self):
+        self._load_schema("schema/postgresql-storage-11.sql")
 
         self.storage.initialize_schema()
 
