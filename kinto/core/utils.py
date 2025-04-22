@@ -116,6 +116,7 @@ def recursive_update_dict(root, changes, ignores=()):
             else:
                 root[k] = v
 
+
 def is_json(value):
     try:
         json.loads(value)
