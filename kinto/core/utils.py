@@ -74,7 +74,7 @@ def microsec_time():
 
     :rtype: int
     """
-    return int(time.time() * 1000.0)
+    return time.time_ns() // 1000
 
 
 def classname(obj):
@@ -115,6 +115,13 @@ def recursive_update_dict(root, changes, ignores=()):
                     root.pop(k)
             else:
                 root[k] = v
+
+def is_json(value):
+    try:
+        parsed = json.loads(value)
+        return True
+    except (ValueError, TypeError):
+        return False
 
 
 def random_bytes_hex(bytes_length):
