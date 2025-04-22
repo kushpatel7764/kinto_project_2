@@ -1,3 +1,4 @@
+import json
 import warnings
 
 import colander
@@ -12,9 +13,8 @@ from kinto.core.schema import (
     QueryField,
     TimeStamp,
 )
-from kinto.core.utils import native_value
-import json
-from kinto.core.utils import is_json
+from kinto.core.utils import is_json, native_value
+
 
 POSTGRESQL_MAX_INTEGER_VALUE = 2**63
 

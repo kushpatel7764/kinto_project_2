@@ -118,7 +118,7 @@ def recursive_update_dict(root, changes, ignores=()):
 
 def is_json(value):
     try:
-        parsed = json.loads(value)
+        json.loads(value)
         return True
     except (ValueError, TypeError):
         return False
