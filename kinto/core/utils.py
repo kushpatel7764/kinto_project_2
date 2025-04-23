@@ -118,11 +118,11 @@ def recursive_update_dict(root, changes, ignores=()):
 
 
 def is_json(value):
-  try:
-    json.loads(value)
-    return True
-  except (ValueError, TypeError):
-    return False
+    try:
+        json.loads(value)
+        return True
+    except (ValueError, TypeError):
+        return False
 
 
 def random_bytes_hex(bytes_length):
