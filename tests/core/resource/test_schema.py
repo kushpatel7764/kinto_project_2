@@ -154,11 +154,13 @@ class FieldListSchemaTest(unittest.TestCase):
         deserialized = self.schema.deserialize(value)
         self.assertEqual(deserialized, ["foo", " -bar", "123"])
 
-    def test_deserialize_bracket_json(self):  # Kush Test
-        # Simulates ?in_tags=[a, b] — invalid JSON
+    def test_deserialize_bracket_json(self):  # Kush
         value = {"a", "b"}
         deserialized = self.schema.deserialize(value)
-        self.assertEqual(deserialized, ["a", "b"])
+        self.assertIn( "a" , deserialized)
+        self.assertIn("b", deserialized)
+        self.assertNotIn("c", deserialized)
+        self.assertNotIn("b,a", deserialized)
 
     def test_raises_invalid_if_not_string(self):
         value = 123
