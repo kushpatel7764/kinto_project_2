@@ -157,7 +157,7 @@ class FieldListSchemaTest(unittest.TestCase):
     def test_deserialize_bracket_json(self):  # Kush
         value = {"a", "b"}
         deserialized = self.schema.deserialize(value)
-        self.assertIn( "a" , deserialized)
+        self.assertIn("a", deserialized)
         self.assertIn("b", deserialized)
         self.assertNotIn("c", deserialized)
         self.assertNotIn("b,a", deserialized)
