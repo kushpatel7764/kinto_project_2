@@ -1,3 +1,4 @@
+import json
 import warnings
 
 import colander
@@ -12,7 +13,7 @@ from kinto.core.schema import (
     QueryField,
     TimeStamp,
 )
-from kinto.core.utils import native_value
+from kinto.core.utils import is_json, native_value
 
 
 POSTGRESQL_MAX_INTEGER_VALUE = 2**63
@@ -219,31 +220,34 @@ class QuerySchema(colander.MappingSchema):
         Deserialize and validate the QuerySchema fields and try to deserialize and
         get the native value of additional filds (field filters) that may be present
         on the cstruct.
-
         e.g:: ?exclude_id=a,b&deleted=true -> {'exclude_id': ['a', 'b'], deleted: True}
         """
         values = {}
-
         schema_values = super().deserialize(cstruct)
-
         # Deserialize querystring field filters (see docstring e.g)
         for k, v in cstruct.items():
             # Deserialize lists used on contains_ and contains_any_ filters
             if k.startswith("contains_"):
                 as_list = native_value(v)
-
                 if not isinstance(as_list, list):
                     values[k] = [as_list]
                 else:
                     values[k] = as_list
-
             # Deserialize lists used on in_ and exclude_ filters
             elif k.startswith("in_") or k.startswith("exclude_"):
-                as_list = FieldList().deserialize(v)
-                values[k] = [native_value(v) for v in as_list]
+                try:
+                    if is_json(v):
+                        as_list = json.loads(v)
+                    else:
+                        as_list = FieldList().deserialize(v)
+                    # Convert each value to its native type
+                    values[k] = [native_value(item) for item in as_list]
+                except json.JSONDecodeError:
+                    raise ValueError(f"Invalid JSON format for {k}: {v}")
+                # as_list = FieldList().deserialize(v)
+                # values[k] = [native_value(v) for v in as_list]
             else:
                 values[k] = native_value(v)
-
         values.update(schema_values)
         return values
 
