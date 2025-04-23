@@ -70,6 +70,12 @@ class PermissionsSchemaTest(unittest.TestCase):
         deserialized = self.schema.deserialize(perms)
         self.assertEqual(deserialized, perms)
 
+    def test_known_permission_with_empty_list(self):  # Kush Test
+        self.schema.known_perms = ("can_cook",)
+        perms = {"can_cook": []}
+        deserialized = self.schema.deserialize(perms)
+        self.assertEqual(deserialized, perms)
+
     def test_works_with_empty_mapping(self):
         perms = {}
         deserialized = self.schema.deserialize(perms)
@@ -142,6 +148,17 @@ class FieldListSchemaTest(unittest.TestCase):
         value = ""
         deserialized = self.schema.deserialize(value)
         self.assertEqual(deserialized, [])
+
+    def test_field_list_with_spaces(self):  # Kush Test
+        value = ["foo", " -bar", "123"]
+        deserialized = self.schema.deserialize(value)
+        self.assertEqual(deserialized, ["foo", " -bar", "123"])
+
+    def test_deserialize_bracket_json(self):  # Kush Test
+        # Simulates ?in_tags=[a, b] — invalid JSON
+        value = {"a", "b"}
+        deserialized = self.schema.deserialize(value)
+        self.assertEqual(deserialized, ["a", "b"])
 
     def test_raises_invalid_if_not_string(self):
         value = 123
