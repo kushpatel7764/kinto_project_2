@@ -41,7 +41,6 @@ class BaseWebTest(testing.BaseWebTest):
             "/buckets/{}".format(bucket_id), MINIMALIST_BUCKET, headers=self.headers, status=201
         )
 
-
     @classmethod
     def tearDownClass(cls):
         # Deletes everything inside the buckets and then the buckets themselves
