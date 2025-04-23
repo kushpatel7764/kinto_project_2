@@ -18,10 +18,10 @@ class BrowserTest(unittest.TestCase):
 
         request.post("accounts", data={"data": {"id": auth["user"], "password": auth["password"]}})
 
-    # def tearDown(self):
-    #     page.close()
-    #     context.close()
-    #     browser.close()
+    def tearDown(self):
+        page.close()
+        context.close()
+        browser.close()
 
     def test_login_and_view_home_page(self):
         page.goto(f"{baseUrl}admin/")
@@ -41,5 +41,3 @@ class BrowserTest(unittest.TestCase):
         expect(page.get_by_text("project_version")).to_be_visible()
         expect(page.get_by_text("http_api_version")).to_be_visible()
         expect(page.get_by_text("project_docs")).to_be_visible()
-
-        # BrowserTest.tearDown(self)

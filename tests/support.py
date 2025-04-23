@@ -41,24 +41,24 @@ class BaseWebTest(testing.BaseWebTest):
             "/buckets/{}".format(bucket_id), MINIMALIST_BUCKET, headers=self.headers, status=201
         )
 
-    def tearDown(self):
-        """Clean up everything made during the test"""
-        try:
-            buckets = self.app.get("/buckets", headers=self.headers).json["data"]
-            for bucket in buckets:
-                bucket_id = bucket["id"]
+    # def tearDown(self):
+    #     """Clean up everything made during the test"""
+    #     try:
+    #         buckets = self.app.get("/buckets", headers=self.headers).json["data"]
+    #         for bucket in buckets:
+    #             bucket_id = bucket["id"]
 
-                # Delete all groups in the bucket
-                groups = self.app.get(f"/buckets/{bucket_id}/groups", headers=self.headers).json[
-                    "data"
-                ]
-                for group in groups:
-                    group_id = group["id"]
-                    self.app.delete(
-                        f"/buckets/{bucket_id}/groups/{group_id}", headers=self.headers
-                    )
+    #             # Delete all groups in the bucket
+    #             groups = self.app.get(f"/buckets/{bucket_id}/groups", headers=self.headers).json[
+    #                 "data"
+    #             ]
+    #             for group in groups:
+    #                 group_id = group["id"]
+    #                 self.app.delete(
+    #                     f"/buckets/{bucket_id}/groups/{group_id}", headers=self.headers
+    #                 )
 
-                # Delete the bucket after the groups are deleted
-                self.app.delete(f"/buckets/{bucket_id}", headers=self.headers)
-        except Exception as e:
-            print(f"Error in teardown: {e}")
+    #             # Delete the bucket after the groups are deleted
+    #             self.app.delete(f"/buckets/{bucket_id}", headers=self.headers)
+    #     except Exception as e:
+    #         print(f"Error in teardown: {e}")
