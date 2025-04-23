@@ -40,3 +40,22 @@ class BaseWebTest(testing.BaseWebTest):
         self.app.put_json(
             "/buckets/{}".format(bucket_id), MINIMALIST_BUCKET, headers=self.headers, status=201
         )
+
+
+    @classmethod
+    def tearDownClass(cls):
+        # Deletes everything inside the buckets and then the buckets themselves
+        # Use the headers to delete the buckets
+        buckets = cls.app.get("/buckets", headers=cls.headers).json["data"]
+        for bucket in buckets:
+            bucket_id = bucket["id"]
+            # Delete everything inside the buckets
+            groups = cls.app.get(f"/buckets/{bucket_id}/groups", headers=cls.headers).json["data"]
+            for group in groups:
+                group_id = group["id"]
+                cls.app.delete(f"/buckets/{bucket_id}/groups/{group_id}", headers=cls.headers)
+
+            # Finally delete the bucket
+            cls.app.delete(f"/buckets/{bucket_id}", headers=cls.headers)
+
+        super().tearDownClass()
