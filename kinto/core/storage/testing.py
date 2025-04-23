@@ -1669,9 +1669,9 @@ class DeprecatedCoreNotionsTest:
         patch = mock.patch("warnings.warn")
         self.mocked_warnings = patch.start()
 
-    def tearDown(self):
-        super().tearDown()
-        mock.patch.stopall()
+    # def tearDown(self):
+    #     super().tearDown()
+    #     mock.patch.stopall()
 
     def test_deprecated_collection_timestamp(self):
         self.storage.collection_timestamp(collection_id="test", parent_id="")

@@ -25,10 +25,6 @@ class DefaultBucketViewTest(FormattedErrorMixin, DefaultBucketWebTest):
     collection_url = "/buckets/default/collections/tasks"
 
     def test_unauthenticated_bucket_access_raises_json_401(self):
-        # If this test runs individual it seems to work and the user remains unauthenticated however,
-        # if this test runs through class the DefaultBucketViewTest(FormattedErrorMixin, DefaultBucketWebTest) clas then
-        # it does not work because the user is automatically authenticated. To fix this issue the line below is added
-        # it ensures that the user is not automatically authenticated.
         self.app.authorization = None
         resp = self.app.get(self.bucket_url, status=401)
         # Assert status code
@@ -328,12 +324,20 @@ class DefaultBucketViewTest(FormattedErrorMixin, DefaultBucketWebTest):
 
 class HelloViewTest(DefaultBucketWebTest):
     def test_returns_bucket_id_and_url_if_authenticated(self):
+        # This function had a string of UUID which is not good for the future. If the username or a variable ever changes
+        # in the backend logic, the test will fail incorrectly.
+        settings = self.app.app.registry.settings
+        default_bucket_hmac_secret = settings["default_bucket_hmac_secret"]
+        bucket_id = hmac_digest(default_bucket_hmac_secret, self.principal)[:32]
+
         response = self.app.get("/", headers=self.headers)
         userinfo = response.json["user"]
         self.assertIn("id", userinfo)
         self.assertIn("principals", userinfo)
         self.assertIn("bucket", userinfo)
-        self.assertEqual(userinfo["bucket"], "ddaf8694-fa9e-2949-ed0e-77198a7907fb")
+        actual_bucket_id = userinfo["bucket"].replace("-", "")
+
+        self.assertEqual(actual_bucket_id, bucket_id)
 
     def test_flush_capability_if_enabled(self):
         resp = self.app.get("/")
@@ -443,6 +447,14 @@ class ReadonlyDefaultBucket(DefaultBucketWebTest):
         settings["readonly"] = True
         return settings
 
+    def setUp(self):
+        super().setUp()
+        # Setup steps here if needed in future
+
+    def tearDown(self):
+        super().tearDown()
+        # Cleanup steps here if needed in future
+
     def test_implicit_creation_is_rejected(self):
         self.app.get("/buckets/default", headers=self.headers, status=405)
 
@@ -454,6 +466,11 @@ class BackendErrorTest(DefaultBucketWebTest):
             self.storage, "create", side_effect=storage_exceptions.BackendError()
         )
         self.addCleanup(self.patcher.stop)
+
+    def tearDown(self):
+        # Ensure the patcher is stopped even if a test fails
+        if self.patcher:
+            self.patcher.stop()
 
     def test_implicit_bucket_creation_raises_503_if_backend_fails(self):
         self.patcher.start()
