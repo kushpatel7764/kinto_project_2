@@ -22,6 +22,10 @@ class GlobalSettingsTest(BaseWebTest, unittest.TestCase):
         )
         self.record = r.json["data"]
 
+    def tearDown(self):
+        super().tearDown()
+        self.app.delete("/buckets/blog", headers=self.headers)
+
     def test_expires_and_cache_control_headers_are_set(self):
         url = "/buckets/blog/collections/cached/records"
         r = self.app.get(url)
@@ -57,6 +61,11 @@ class SpecificSettingsTest(BaseWebTest, unittest.TestCase):
         self.blog_record = create_record_in_collection("blog", "cached")
         self.app_record = create_record_in_collection("browser", "top500")
 
+    def tearDown(self):
+        super().tearDown()
+        self.app.delete("/buckets/blog", headers=self.headers)
+        self.app.delete("/buckets/browser", headers=self.headers)
+
     def assertHasCache(self, url, age):
         r = self.app.get(url)
         self.assertIn("Expires", r.headers)
@@ -90,6 +99,10 @@ class CollectionExpiresTest(BaseWebTest, unittest.TestCase):
         resp = self.app.post_json(self.records_url, MINIMALIST_RECORD, headers=self.headers)
         self.record = resp.json["data"]
         self.record_url = "{}/{}".format(self.records_url, self.record["id"])
+
+    def tearDown(self):
+        super().tearDown()
+        self.app.delete("/buckets/blog", headers=self.headers)
 
     def test_cache_expires_must_be_an_integer(self):
         self.app.put_json(
