@@ -116,6 +116,18 @@ class SpecificSettingsTest(BaseWebTest, unittest.TestCase):
 
 
 class CollectionExpiresTest(BaseWebTest, unittest.TestCase):
+    @classmethod
+    def get_app_settings(cls, extras=None):
+        settings = super().get_app_settings(extras)
+        settings["kinto.record_read_principals"] = "system.Everyone"
+        settings["kinto.bucket_read_principals"] = "system.Authenticated"
+        settings["kinto.bucket_write_principals"] = "system.Authenticated"
+        settings["kinto.collection_write_principals"] = "system.Authenticated"
+        settings["kinto.record_write_principals"] = "system.Authenticated"
+        settings["kinto.collection_create_principals"] = "system.Authenticated"
+
+        return settings
+
     def setUp(self):
         super().setUp()
         bucket = {**MINIMALIST_BUCKET, "permissions": {"read": ["system.Everyone"]}}
@@ -131,10 +143,9 @@ class CollectionExpiresTest(BaseWebTest, unittest.TestCase):
         self.record = resp.json["data"]
         self.record_url = "{}/{}".format(self.records_url, self.record["id"])
 
-    # @classmethod
-    # def tearDownClass(cls):
-    #     super().tearDownClass()
-    #     cls.app.delete("/buckets/blog", headers=cls.headers)
+    def tearDown(self):
+        super().tearDown()
+        self.app.delete("/buckets/blog", headers=self.headers, status=[200, 404])
 
     def test_cache_expires_must_be_an_integer(self):
         self.app.put_json(
