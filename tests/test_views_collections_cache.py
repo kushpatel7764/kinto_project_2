@@ -9,7 +9,12 @@ class GlobalSettingsTest(BaseWebTest, unittest.TestCase):
         settings = super().get_app_settings(extras)
         settings["kinto.record_cache_expires_seconds"] = 3600
         settings["kinto.record_read_principals"] = "system.Everyone"
-        settings["kinto.bucket_read_principals"] = "system.Authenticated"
+        settings["kinto.bucket_read_principals"] = "system.Everyone"
+
+        settings["kinto.bucket_write_principals"] = "system.Everyone"
+        settings["kinto.collection_write_principals"] = "system.Everyone"
+        settings["kinto.record_write_principals"] = "system.Everyone"
+        settings["kinto.collection_create_principals"] = "system.Everyone"
         return settings
 
     def setUp(self):
