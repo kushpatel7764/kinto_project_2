@@ -15,7 +15,12 @@ class GlobalSettingsTest(BaseWebTest, unittest.TestCase):
         super().setUp()
         self.create_bucket("blog")
         self.app.put_json(
-            "/buckets/blog", {"permissions": {"read": ["system.Everyone"]}}, headers=self.headers
+            "/buckets/blog",
+            {"permissions": {
+                "read": ["system.Everyone"],
+                "write": ["system.Authenticated"]
+            }},
+            headers=self.headers
         )
         self.app.put_json(
             "/buckets/blog/collections/cached", MINIMALIST_COLLECTION, headers=self.headers
