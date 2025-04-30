@@ -20,7 +20,6 @@ class GlobalSettingsTest(BaseWebTest, unittest.TestCase):
                 "permissions": {
                     "read": ["system.Everyone"],
                     "write": ["system.Authenticated"],
-                    "delete": ["system.Authenticated"],
                 }
             },
             headers=self.headers,
@@ -45,6 +44,8 @@ class GlobalSettingsTest(BaseWebTest, unittest.TestCase):
 
     def tearDown(self):
         super().tearDown()
+
+        self.headers.update(get_admin_headers())
 
         record_url = f"/buckets/blog/collections/cached/records/{self.record['id']}"
         self.app.delete(record_url, headers=self.headers, status=[200, 404])
