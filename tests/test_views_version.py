@@ -21,13 +21,17 @@ class VersionViewTest(BaseWebTest, unittest.TestCase):
     def test_return_the_version_file_in_current_folder_if_present(self):
         content = {"version": "0.8.1"}
         fake_file = mock.mock_open(read_data=json.dumps(content))
+
         with mock.patch("os.path.exists"):
             with mock.patch("kinto.core.views.version.open", fake_file, create=True):
                 response = self.app.get("/__version__")
                 assert response.json == content
 
+
     def test_return_a_500_if_version_file_if_not_present(self):
-        self.app.get("/__version__", status=500)
+        with mock.patch("kinto.core.views.version.open") as mock_open:
+            response = self.app.get("/__version__", status=500)
+            assert response.status_code == 500
 
     def test_return_the_version_file_specified_in_setting_if_present(self):
         custom_path = tempfile.mktemp()
