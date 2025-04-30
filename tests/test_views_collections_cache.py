@@ -13,6 +13,7 @@ class GlobalSettingsTest(BaseWebTest, unittest.TestCase):
 
     def setUp(self):
         super().setUp()
+        self.headers.update(testing.get_user_headers("mat"))
         self.create_bucket("blog")
         self.app.put_json(
             "/buckets/blog",
