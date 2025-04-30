@@ -15,6 +15,9 @@ class GlobalSettingsTest(BaseWebTest, unittest.TestCase):
         super().setUp()
         self.create_bucket("blog")
         self.app.put_json(
+            "/buckets/blog", {"permissions": {"read": ["system.Everyone"]}}, headers=self.headers
+        )
+        self.app.put_json(
             "/buckets/blog/collections/cached", MINIMALIST_COLLECTION, headers=self.headers
         )
         r = self.app.post_json(
@@ -22,20 +25,47 @@ class GlobalSettingsTest(BaseWebTest, unittest.TestCase):
         )
         self.record = r.json["data"]
 
-    @classmethod
-    def tearDownClass(cls):
-        super().tearDownClass()
-        cls.app.delete("/buckets/blog", headers=cls.headers)
+    def tearDown(self):
+        super().tearDown()
+        self.app.delete("/buckets/blog", headers=self.headers)
 
     def test_expires_and_cache_control_headers_are_set(self):
         url = "/buckets/blog/collections/cached/records"
-        r = self.app.get(url)
+        r = self.app.get(url, headers=self.headers)
         self.assertIn("Expires", r.headers)
         self.assertEqual(r.headers["Cache-Control"], "max-age=3600")
 
-        r = self.app.get("{}/{}".format(url, self.record["id"]))
+        r = self.app.get(f"{url}/{self.record['id']}", headers=self.headers)
         self.assertIn("Expires", r.headers)
         self.assertEqual(r.headers["Cache-Control"], "max-age=3600")
+
+    # @classmethod
+    # def get_app_settings(cls, extras=None):
+    #     settings = super().get_app_settings(extras)
+    #     settings["kinto.record_cache_expires_seconds"] = 3600
+    #     settings["kinto.record_read_principals"] = "system.Everyone"
+    #     return settings
+
+    # def setUp(self):
+    #     super().setUp()
+    #     self.create_bucket("blog")
+    #     self.app.put_json(
+    #         "/buckets/blog/collections/cached", MINIMALIST_COLLECTION, headers=self.headers
+    #     )
+    #     r = self.app.post_json(
+    #         "/buckets/blog/collections/cached/records", MINIMALIST_RECORD, headers=self.headers
+    #     )
+    #     self.record = r.json["data"]
+
+    # def test_expires_and_cache_control_headers_are_set(self):
+    #     url = "/buckets/blog/collections/cached/records"
+    #     r = self.app.get(url)
+    #     self.assertIn("Expires", r.headers)
+    #     self.assertEqual(r.headers["Cache-Control"], "max-age=3600")
+
+    #     r = self.app.get("{}/{}".format(url, self.record["id"]))
+    #     self.assertIn("Expires", r.headers)
+    #     self.assertEqual(r.headers["Cache-Control"], "max-age=3600")
 
 
 class SpecificSettingsTest(BaseWebTest, unittest.TestCase):
@@ -62,11 +92,11 @@ class SpecificSettingsTest(BaseWebTest, unittest.TestCase):
         self.blog_record = create_record_in_collection("blog", "cached")
         self.app_record = create_record_in_collection("browser", "top500")
 
-    @classmethod
-    def tearDownClass(cls):
-        super().tearDownClass()
-        cls.app.delete("/buckets/blog", headers=cls.headers)
-        cls.app.delete("/buckets/browser", headers=cls.headers)
+    # @classmethod
+    # def tearDownClass(cls):
+    #     super().tearDownClass()
+    #     cls.app.delete("/buckets/blog", headers=cls.headers)
+    #     cls.app.delete("/buckets/browser", headers=cls.headers)
 
     def assertHasCache(self, url, age):
         r = self.app.get(url)
@@ -102,10 +132,10 @@ class CollectionExpiresTest(BaseWebTest, unittest.TestCase):
         self.record = resp.json["data"]
         self.record_url = "{}/{}".format(self.records_url, self.record["id"])
 
-    @classmethod
-    def tearDownClass(cls):
-        super().tearDownClass()
-        cls.app.delete("/buckets/blog", headers=cls.headers)
+    # @classmethod
+    # def tearDownClass(cls):
+    #     super().tearDownClass()
+    #     cls.app.delete("/buckets/blog", headers=cls.headers)
 
     def test_cache_expires_must_be_an_integer(self):
         self.app.put_json(
