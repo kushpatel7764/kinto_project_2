@@ -9,6 +9,7 @@ class GlobalSettingsTest(BaseWebTest, unittest.TestCase):
         settings = super().get_app_settings(extras)
         settings["kinto.record_cache_expires_seconds"] = 3600
         settings["kinto.record_read_principals"] = "system.Everyone"
+        settings["kinto.bucket_read_principals"] = "system.Authenticated"
         return settings
 
     def setUp(self):
@@ -44,8 +45,6 @@ class GlobalSettingsTest(BaseWebTest, unittest.TestCase):
 
     def tearDown(self):
         super().tearDown()
-
-        self.headers.update(get_admin_headers())
 
         record_url = f"/buckets/blog/collections/cached/records/{self.record['id']}"
         self.app.delete(record_url, headers=self.headers, status=[200, 404])
