@@ -28,7 +28,7 @@ class VersionViewTest(BaseWebTest, unittest.TestCase):
                 assert response.json == content
 
     def test_return_a_500_if_version_file_if_not_present(self):
-        with mock.patch("kinto.core.views.version.open") as mock_open:
+        with mock.patch("kinto.core.views.version.open"):
             response = self.app.get("/__version__", status=500)
             assert response.status_code == 500
 
