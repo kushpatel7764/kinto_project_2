@@ -117,6 +117,14 @@ def recursive_update_dict(root, changes, ignores=()):
                 root[k] = v
 
 
+def is_json(value):
+    try:
+        json.loads(value)
+        return True
+    except (ValueError, TypeError):
+        return False
+
+
 def random_bytes_hex(bytes_length):
     """Return a hexstring of bytes_length cryptographic-friendly random bytes.
 

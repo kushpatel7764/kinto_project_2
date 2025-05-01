@@ -9,11 +9,27 @@ class GlobalSettingsTest(BaseWebTest, unittest.TestCase):
         settings = super().get_app_settings(extras)
         settings["kinto.record_cache_expires_seconds"] = 3600
         settings["kinto.record_read_principals"] = "system.Everyone"
+        settings["kinto.bucket_read_principals"] = "system.Authenticated"
+
+        settings["kinto.bucket_write_principals"] = "system.Authenticated"
+        settings["kinto.collection_write_principals"] = "system.Authenticated"
+        settings["kinto.record_write_principals"] = "system.Authenticated"
+        settings["kinto.collection_create_principals"] = "system.Authenticated"
         return settings
 
     def setUp(self):
         super().setUp()
         self.create_bucket("blog")
+        self.app.put_json(
+            "/buckets/blog",
+            {
+                "permissions": {
+                    "read": ["system.Everyone"],
+                    "write": ["system.Authenticated"],
+                }
+            },
+            headers=self.headers,
+        )
         self.app.put_json(
             "/buckets/blog/collections/cached", MINIMALIST_COLLECTION, headers=self.headers
         )
@@ -32,6 +48,17 @@ class GlobalSettingsTest(BaseWebTest, unittest.TestCase):
         self.assertIn("Expires", r.headers)
         self.assertEqual(r.headers["Cache-Control"], "max-age=3600")
 
+    def tearDown(self):
+        super().tearDown()
+
+        record_url = f"/buckets/blog/collections/cached/records/{self.record['id']}"
+        self.app.delete(record_url, headers=self.headers, status=[200, 404])
+
+        collection_url = "/buckets/blog/collections/cached"
+        self.app.delete(collection_url, headers=self.headers, status=[200, 404])
+
+        self.app.delete("/buckets/blog", headers=self.headers, status=[200, 404])
+
 
 class SpecificSettingsTest(BaseWebTest, unittest.TestCase):
     @classmethod
@@ -39,6 +66,14 @@ class SpecificSettingsTest(BaseWebTest, unittest.TestCase):
         settings = super().get_app_settings(extras)
         settings["kinto.blog.record_cache_expires_seconds"] = "30"
         settings["kinto.browser.top500.record_cache_expires_seconds"] = "60"
+
+        settings["kinto.record_read_principals"] = "system.Everyone"
+        settings["kinto.bucket_read_principals"] = "system.Authenticated"
+        settings["kinto.bucket_write_principals"] = "system.Authenticated"
+        settings["kinto.collection_write_principals"] = "system.Authenticated"
+        settings["kinto.record_write_principals"] = "system.Authenticated"
+        settings["kinto.collection_create_principals"] = "system.Authenticated"
+
         return settings
 
     def setUp(self):
@@ -56,6 +91,11 @@ class SpecificSettingsTest(BaseWebTest, unittest.TestCase):
 
         self.blog_record = create_record_in_collection("blog", "cached")
         self.app_record = create_record_in_collection("browser", "top500")
+
+    def tearDown(self):
+        super().tearDown()
+        self.app.delete("/buckets/blog", headers=self.headers, status=[200, 404])
+        self.app.delete("/buckets/browser", headers=self.headers, status=[200, 404])
 
     def assertHasCache(self, url, age):
         r = self.app.get(url)
@@ -76,6 +116,18 @@ class SpecificSettingsTest(BaseWebTest, unittest.TestCase):
 
 
 class CollectionExpiresTest(BaseWebTest, unittest.TestCase):
+    @classmethod
+    def get_app_settings(cls, extras=None):
+        settings = super().get_app_settings(extras)
+        settings["kinto.record_read_principals"] = "system.Everyone"
+        settings["kinto.bucket_read_principals"] = "system.Authenticated"
+        settings["kinto.bucket_write_principals"] = "system.Authenticated"
+        settings["kinto.collection_write_principals"] = "system.Authenticated"
+        settings["kinto.record_write_principals"] = "system.Authenticated"
+        settings["kinto.collection_create_principals"] = "system.Authenticated"
+
+        return settings
+
     def setUp(self):
         super().setUp()
         bucket = {**MINIMALIST_BUCKET, "permissions": {"read": ["system.Everyone"]}}
@@ -90,6 +142,10 @@ class CollectionExpiresTest(BaseWebTest, unittest.TestCase):
         resp = self.app.post_json(self.records_url, MINIMALIST_RECORD, headers=self.headers)
         self.record = resp.json["data"]
         self.record_url = "{}/{}".format(self.records_url, self.record["id"])
+
+    def tearDown(self):
+        super().tearDown()
+        self.app.delete("/buckets/blog", headers=self.headers, status=[200, 404])
 
     def test_cache_expires_must_be_an_integer(self):
         self.app.put_json(

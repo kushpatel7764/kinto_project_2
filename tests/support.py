@@ -40,3 +40,30 @@ class BaseWebTest(testing.BaseWebTest):
         self.app.put_json(
             "/buckets/{}".format(bucket_id), MINIMALIST_BUCKET, headers=self.headers, status=201
         )
+
+    @classmethod
+    def tearDownClass(cls):
+        """Clean up everything after all tests have run"""
+        try:
+            # Make sure authentication headers are there
+            cls.headers.update(testing.get_user_headers("mat"))
+
+            # Get all of the shared buckets
+            buckets = cls.app.get("/buckets", headers=cls.headers).json["data"]
+            for bucket in buckets:
+                bucket_id = bucket["id"]
+
+                # First delete all groups within the buckets
+                groups = cls.app.get(f"/buckets/{bucket_id}/groups", headers=cls.headers).json[
+                    "data"
+                ]
+                for group in groups:
+                    group_id = group["id"]
+                    cls.app.delete(f"/buckets/{bucket_id}/groups/{group_id}", headers=cls.headers)
+
+                # Delete the bucket
+                cls.app.delete(f"/buckets/{bucket_id}", headers=cls.headers)
+        except Exception as e:
+            print(f"Teardown error: {e}")
+        finally:
+            super().tearDownClass()

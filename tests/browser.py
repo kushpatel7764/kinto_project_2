@@ -18,6 +18,11 @@ class BrowserTest(unittest.TestCase):
 
         request.post("accounts", data={"data": {"id": auth["user"], "password": auth["password"]}})
 
+    def tearDown(self):
+        page.close()
+        context.close()
+        browser.close()
+
     def test_login_and_view_home_page(self):
         page.goto(f"{baseUrl}admin/")
 
