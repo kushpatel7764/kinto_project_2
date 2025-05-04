@@ -66,7 +66,7 @@ $(DOC_STAMP): $(PYTHON) docs/requirements.txt
 	touch $(DOC_STAMP)
 
 constraints.txt: requirements/base.in requirements/postgresql.in requirements/memcached.in requirements/monitoring.in requirements/test.in requirements/dev.in
-	pip-compile -o requirements/base.in requirements/postgresql.in requirements/memcached.in requirements/monitoring.in requirements/test.in requirements/dev.in --output-file=constraints.txt
+	pip-compile -o constraints.txt requirements/base.in requirements/postgresql.in requirements/memcached.in requirements/monitoring.in requirements/test.in requirements/dev.in --output-file=constraints.txt
 
 pull-kinto-admin:
 	scripts/pull-kinto-admin.sh
