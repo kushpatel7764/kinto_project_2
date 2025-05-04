@@ -65,8 +65,8 @@ $(DOC_STAMP): $(PYTHON) docs/requirements.txt
 	$(VENV)/bin/pip install -r docs/requirements.txt
 	touch $(DOC_STAMP)
 
-constraints.txt: requirements/base.in requirements/postgresql.in requirements/memcached.in requirements/monitoring.in requirements/test.in requirements/dev.in
-	pip-compile -o constraints.txt requirements/base.in requirements/postgresql.in requirements/memcached.in requirements/monitoring.in requirements/test.in requirements/dev.in
+constraints.txt: base.in postgresql.in memcached.in monitoring.in test.in dev.in
+	pip-compile -o constraints.txt base.in postgresql.in memcached.in monitoring.in test.in dev.in
 
 pull-kinto-admin:
 	scripts/pull-kinto-admin.sh
