@@ -1,4 +1,3 @@
-import datetime
 import json
 import os
 import unittest
@@ -293,29 +292,27 @@ class PostgresqlStorageMigrationTest(unittest.TestCase):
         assert count == 1
         assert objects[0]["drink"] == "mate"
 
+    def test_epoch_functions(self):
+        with self.storage.client.connect() as conn:
+            as_epoch_tests = [
+                ("2020-01-01 00:00:00", 0),
+                ("2020-01-01 00:00:00.0000001", 0),
+                ("2020-01-01 00:00:00.0000002", 0),
+            ]
+            for timestamp, expected in as_epoch_tests:
+                result = conn.execute(sa.text("SELECT as_epoch(:ts)"), {"ts": timestamp}).scalar()
+                self.assertEqual(result, expected)
 
-def test_epoch_functions(self):
-    with self.storage.client.connect() as conn:
-        as_epoch_tests = [
-            ("2020-01-01 00:00:00", 0),
-            ("2020-01-01 00:00:00.0000001", 0),
-            ("2020-01-01 00:00:00.0000002", 0),
-        ]
-        for timestamp, expected in as_epoch_tests:
-            result = conn.execute(sa.text("SELECT as_epoch(:ts)"), {"ts": timestamp}).scalar()
-            self.assertEqual(result, expected)
-
-        from_epoch_tests = [
-            (0, datetime.datetime(2020, 1, 1, 0, 0, 0, 0)),
-            (1, datetime.datetime(2020, 1, 1, 0, 0, 0, 1)),
-            (2, datetime.datetime(2020, 1, 1, 0, 0, 0, 2)),
-        ]
-        for epoch, expected in from_epoch_tests:
-            result = conn.execute(
-                sa.text("SELECT from_epoch(:epoch)::TEXT"), {"epoch": epoch}
-            ).scalar()
-            result_dt = datetime.datetime.strptime(result, "%Y-%m-%d %H:%M:%S.%f")
-            self.assertAlmostEqual(result_dt, expected, delta=datetime.timedelta(microseconds=1))
+            from_epoch_tests = [
+                (0, "2020-01-01 00:00:00"),
+                (1, "2020-01-01 00:00:00.0000001"),
+                (2, "2020-01-01 00:00:00.0000002"),
+            ]
+            for epoch, expected in from_epoch_tests:
+                result = conn.execute(
+                    sa.text("SELECT from_epoch(:epoch)::TEXT"), {"epoch": epoch}
+                ).scalar()
+                self.assertEqual(result, expected)
 
 
 @skip_if_no_postgresql
