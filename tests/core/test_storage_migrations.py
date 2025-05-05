@@ -292,6 +292,28 @@ class PostgresqlStorageMigrationTest(unittest.TestCase):
         assert count == 1
         assert objects[0]["drink"] == "mate"
 
+    def test_epoch_functions(self):
+        with self.storage.client.connect() as conn:
+            as_epoch_tests = [
+                ("2020-01-01 00:00:00", 0),
+                ("2020-01-01 00:00:00.0000001", 0.00001),
+                ("2020-01-01 00:00:00.0000002", 0.00002),
+            ]
+            for timestamp, expected in as_epoch_tests:
+                result = conn.execute(sa.text("SELECT as_epoch(:ts)"), {"ts": timestamp}).scalar()
+                self.assertAlmostEqual(result, expected, places=5)
+
+            from_epoch_tests = [
+                (0, "2020-01-01 00:00:00"),
+                (0.00001, "2020-01-01 00:00:00.0000001"),
+                (0.00002, "2020-01-01 00:00:00.0000002"),
+            ]
+            for epoch, expected in from_epoch_tests:
+                result = conn.execute(
+                    sa.text("SELECT from_epoch(:epoch)::TEXT"), {"epoch": epoch}
+                ).scalar()
+                self.assertEqual(result, expected)
+
 
 @skip_if_no_postgresql
 class PostgresqlPermissionMigrationTest(unittest.TestCase):
