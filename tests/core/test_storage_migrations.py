@@ -305,8 +305,8 @@ class PostgresqlStorageMigrationTest(unittest.TestCase):
 
             from_epoch_tests = [
                 (0, "2020-01-01 00:00:00"),
-                (1, "2020-01-01 00:00:00.00001"),
-                (2, "2020-01-01 00:00:00.00002"),
+                (1, "2020-01-01 00:00:00.0000001"),
+                (2, "2020-01-01 00:00:00.0000002"),
             ]
             for epoch, expected in from_epoch_tests:
                 result = conn.execute(
