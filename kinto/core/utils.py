@@ -74,7 +74,7 @@ def microsec_time():
 
     :rtype: int
     """
-    return int(time.time() * 1000.0)
+    return int(time.time() * 10000.0)
 
 
 def classname(obj):

@@ -816,12 +816,12 @@ class TimestampsTest:
 
     def test_the_timestamp_are_based_on_real_time_microseconds(self):
         before = utils.microsec_time()
-        time.sleep(0.00008)  # 2 mill
+        time.sleep(0.00002)  # 20 microseconds
         obj = self.create_object()
         now = obj["last_modified"]
-        time.sleep(0.00008)  # 2 mill
+        time.sleep(0.00002)  # 20 microseconds
         after = utils.microsec_time()
-        self.assertFalse(before < now < after, f"{before} < {now} < {after}")
+        self.assertTrue(before < now < after, f"{before} < {now} < {after}")
 
     def test_timestamp_are_always_incremented_above_existing_value(self):
         # Create an object with normal clock
