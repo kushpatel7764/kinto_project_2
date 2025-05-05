@@ -1,8 +1,8 @@
+import datetime
 import json
 import os
 import unittest
 from unittest import mock
-import datetime
 
 from pyramid import testing
 
