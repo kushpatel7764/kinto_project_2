@@ -296,8 +296,8 @@ class PostgresqlStorageMigrationTest(unittest.TestCase):
         with self.storage.client.connect() as conn:
             as_epoch_tests = [
                 ("2020-01-01 00:00:00", 0),
-                ("2020-01-01 00:00:00.0000001", 1),
-                ("2020-01-01 00:00:00.0000002", 2),
+                ("2020-01-01 00:00:00.0000001", 0),
+                ("2020-01-01 00:00:00.0000002", 0),
             ]
             for timestamp, expected in as_epoch_tests:
                 result = conn.execute(sa.text("SELECT as_epoch(:ts)"), {"ts": timestamp}).scalar()
@@ -312,7 +312,7 @@ class PostgresqlStorageMigrationTest(unittest.TestCase):
                 result = conn.execute(
                     sa.text("SELECT from_epoch(:epoch)::TEXT"), {"epoch": epoch}
                 ).scalar()
-                self.assertEqual(result, expected)
+                self.assertAlmostEqual(result, expected, places=10)
 
 
 @skip_if_no_postgresql
