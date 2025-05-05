@@ -56,7 +56,9 @@ class GroupValidationTest(BaseWebTestWithSchema, unittest.TestCase):
         try:
             self.app.delete(GROUP_URL, headers=self.headers)
         except Exception:
-            print("Group wasn't created or already deleted")  # In case the group wasn't created or already deleted
+            print(
+                "Group wasn't created or already deleted"
+            )  # In case the group wasn't created or already deleted
 
         # Clean up the bucket
         try:

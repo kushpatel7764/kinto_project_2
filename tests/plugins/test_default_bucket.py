@@ -323,7 +323,7 @@ class DefaultBucketViewTest(FormattedErrorMixin, DefaultBucketWebTest):
 
 
 class HelloViewTest(DefaultBucketWebTest):
-    def test_returns_bucket_id_and_url_if_authenticated(self): # Changed by Chase
+    def test_returns_bucket_id_and_url_if_authenticated(self):  # Changed by Chase
         # This function had a string of UUID which is not good for the future. If the username or a variable ever changes
         # in the backend logic, the test will fail incorrectly.
         settings = self.app.app.registry.settings
@@ -337,8 +337,8 @@ class HelloViewTest(DefaultBucketWebTest):
         self.assertIn("bucket", userinfo)
         actual_bucket_id = userinfo["bucket"].replace("-", "")
 
-
         self.assertEqual(actual_bucket_id, bucket_id)
+
     def test_flush_capability_if_enabled(self):
         resp = self.app.get("/")
         capabilities = resp.json["capabilities"]
@@ -447,11 +447,11 @@ class ReadonlyDefaultBucket(DefaultBucketWebTest):
         settings["readonly"] = True
         return settings
 
-    def setUp(self): # Added by Chase
+    def setUp(self):  # Added by Chase
         super().setUp()
         # Setup steps here if needed in future
 
-    def tearDown(self): # Added by Chase
+    def tearDown(self):  # Added by Chase
         super().tearDown()
         # Cleanup steps here if needed in future
 
@@ -467,7 +467,7 @@ class BackendErrorTest(DefaultBucketWebTest):
         )
         self.addCleanup(self.patcher.stop)
 
-    def tearDown(self): # Added by Chase
+    def tearDown(self):  # Added by Chase
         # Ensure the patcher is stopped even if a test fails
         if self.patcher:
             self.patcher.stop()
