@@ -1,4 +1,6 @@
-bravado
+# test.in
+# Dependencies required for testing
+bravado_core
 pytest
 pytest-cache
 pytest-cov

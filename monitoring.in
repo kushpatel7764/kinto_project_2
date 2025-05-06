@@ -1,3 +1,5 @@
+# monitoring.in
+# Optional monitoring (StatsD, NewRelic, Sentry, etc.)
 newrelic
 sentry-sdk[sqlalchemy]
 statsd
