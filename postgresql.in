@@ -1,0 +1,5 @@
+# postgresql.in
+# Optional PostgreSQL support
+SQLAlchemy<3
+psycopg2-binary
+zope.sqlalchemy

@@ -1,0 +1,16 @@
+# base.in
+# Main/core dependencies for Kinto
+bcrypt
+colander
+dockerflow
+jsonschema
+jsonpatch
+logging-color-formatter
+python-dateutil
+pyramid
+pyramid_multiauth
+transaction
+pyramid_tm
+requests
+waitress
+python-rapidjson

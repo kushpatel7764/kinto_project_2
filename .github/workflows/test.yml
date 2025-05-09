@@ -4,6 +4,7 @@ on:
       - main
       - kush
       - Thomas
+      - Sovunh
   pull_request:
 
 name: Unit Testing

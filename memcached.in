@@ -1,0 +1,3 @@
+# memcached.in
+# Optional Memcached support
+python-memcached
