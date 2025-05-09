@@ -1102,7 +1102,7 @@ class Resource:
                 continue
 
             all_keywords = r"|".join([i.name.lower() for i in COMPARISON])
-            m = re.match(r"^(" + all_keywords + r")_([\w\.]+)$", param)
+            m = re.match(r"^(" + all_keywords + r")_([\w\.\-\@\!\*\~]+)$", param)
             if m:
                 keyword, field = m.groups()
                 operator = getattr(COMPARISON, keyword.upper())
@@ -1154,7 +1154,7 @@ class Resource:
         modified_field_used = self.model.modified_field in specified
         for field in specified:
             field = field.strip()
-            m = re.match(r"^([\-+]?)([\w\.]+)$", field)
+            m = re.match(r"^([\-+]?)([\w\.\-\@\!\*\~]+)$", field)
             if m:
                 order, field = m.groups()
 
