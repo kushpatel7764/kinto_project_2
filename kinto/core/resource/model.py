@@ -248,6 +248,18 @@ class Model:
         perm_object_id = self.get_permission_object_id(object_id)
         return self._annotate(obj, perm_object_id)
 
+    def replace_dots_in_keys(self, d):
+        """Recursively replace dots with underscores in keys."""
+        if not isinstance(d, dict):
+            return d  # Return non-dict objects unchanged
+
+        new_dict = {}
+        for k, v in d.items():
+            # Replace dots in the key
+            new_key = k.replace(".", "_")
+            new_dict[new_key] = self.replace_dots_in_keys(v) if isinstance(v, dict) else v
+        return new_dict
+
     def create_object(self, obj, parent_id=None):
         """Create an object in the resource.
 
@@ -270,6 +282,7 @@ class Model:
         :returns: the newly created object.
         :rtype: dict
         """
+        obj = self.replace_dots_in_keys(obj)
         parent_id = parent_id or self.parent_id
 
         permissions = obj.pop(self.permissions_field, {})
