@@ -13,6 +13,7 @@ from kinto.core.storage import generators
 from kinto.core.utils import encode64, follow_subrequest, memcache, sqlalchemy
 from kinto.plugins import prometheus, statsd
 
+from kinto.core.resource.model import Model
 
 skip_if_ci = unittest.skipIf("CI" in os.environ, "ci")
 skip_if_no_postgresql = unittest.skipIf(sqlalchemy is None, "postgresql is not installed.")
@@ -180,3 +181,60 @@ class ThreadMixin:
         thread = threading.Thread(*args, **kwargs)
         self._threads.append(thread)
         return thread
+
+# New Test
+class DummyStorage:
+    def create(self, **kwargs):
+        # Simulate storage behavior by returning the object with an ID
+        obj = kwargs['obj']
+        obj['id'] = 'test-id'
+        return obj
+
+class DummyPermissions:
+    def replace_object_permissions(self, obj_id, permissions):
+        pass
+    def add_principal_to_ace(self, obj_id, permission, principal):
+        pass
+
+class DummyResource(Model):
+    def __init__(self):
+        self.storage = DummyStorage()
+        self.permission = DummyPermissions()
+        self.resource_name = "test"
+        self.parent_id = "parent"
+        self.permissions_field = "permissions"
+        self.id_generator = lambda: "test-id"
+        self.id_field = "id"
+        self.modified_field = "last_modified"
+
+    def _annotate(self, obj, obj_id):
+        return obj  # Skip annotation for test
+
+    def _allow_write(self, obj_id):
+        pass  # Skip permission logic for test
+
+    def replace_dots_in_keys(self, d):
+        """Recursively replace dots with underscores in keys."""
+        if not isinstance(d, dict):
+            return d  # Return non-dict objects unchanged
+
+        new_dict = {}
+        for k, v in d.items():
+            # Replace dots in the key
+            new_key = k.replace(".", "_")
+            new_dict[new_key] = self.replace_dots_in_keys(v) if isinstance(v, dict) else v
+        return new_dict
+
+class TestCreateObject(unittest.TestCase):
+    def test_dot_replacement_in_keys(self):
+        resource = DummyResource()
+        input_obj = {
+            "foo.bar": "value",
+            "baz": "qux",
+            "permissions": {}
+        }
+        result = resource.create_object(input_obj.copy())
+        self.assertIn("foo_bar", result)
+        self.assertNotIn("foo.bar", result)
+        self.assertEqual(result["foo_bar"], "value")
+        self.assertEqual(result["baz"], "qux")
