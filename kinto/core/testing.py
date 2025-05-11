@@ -182,19 +182,23 @@ class ThreadMixin:
         self._threads.append(thread)
         return thread
 
+
 # New Test
 class DummyStorage:
     def create(self, **kwargs):
         # Simulate storage behavior by returning the object with an ID
-        obj = kwargs['obj']
-        obj['id'] = 'test-id'
+        obj = kwargs["obj"]
+        obj["id"] = "test-id"
         return obj
+
 
 class DummyPermissions:
     def replace_object_permissions(self, obj_id, permissions):
         pass
+
     def add_principal_to_ace(self, obj_id, permission, principal):
         pass
+
 
 class DummyResource(Model):
     def __init__(self):
@@ -225,14 +229,11 @@ class DummyResource(Model):
             new_dict[new_key] = self.replace_dots_in_keys(v) if isinstance(v, dict) else v
         return new_dict
 
+
 class TestCreateObject(unittest.TestCase):
     def test_dot_replacement_in_keys(self):
         resource = DummyResource()
-        input_obj = {
-            "foo.bar": "value",
-            "baz": "qux",
-            "permissions": {}
-        }
+        input_obj = {"foo.bar": "value", "baz": "qux", "permissions": {}}
         result = resource.create_object(input_obj.copy())
         self.assertIn("foo_bar", result)
         self.assertNotIn("foo.bar", result)
