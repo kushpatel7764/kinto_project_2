@@ -1,4 +1,5 @@
 import os
+import re
 import threading
 import unittest
 from collections import defaultdict
@@ -183,7 +184,7 @@ class ThreadMixin:
         return thread
 
 
-# New Test
+# Test underscore replacement
 class DummyStorage:
     def create(self, **kwargs):
         # Simulate storage behavior by returning the object with an ID
@@ -217,7 +218,7 @@ class DummyResource(Model):
     def _allow_write(self, obj_id):
         pass  # Skip permission logic for test
 
-    def replace_dots_in_keys(self, d):
+    def replace_bad_characters_in_keys(self, d):
         """Recursively replace dots with underscores in keys."""
         if not isinstance(d, dict):
             return d  # Return non-dict objects unchanged
@@ -225,8 +226,10 @@ class DummyResource(Model):
         new_dict = {}
         for k, v in d.items():
             # Replace dots in the key
-            new_key = k.replace(".", "_")
-            new_dict[new_key] = self.replace_dots_in_keys(v) if isinstance(v, dict) else v
+            new_key = re.sub(r"[.=+]", "_", k)
+            new_dict[new_key] = (
+                self.replace_bad_characters_in_keys(v) if isinstance(v, dict) else v
+            )
         return new_dict
 
 
@@ -239,3 +242,73 @@ class TestCreateObject(unittest.TestCase):
         self.assertNotIn("foo.bar", result)
         self.assertEqual(result["foo_bar"], "value")
         self.assertEqual(result["baz"], "qux")
+
+        input_obj = {"foo+bar": "value", "baz": "qux", "permissions": {}}
+        result = resource.create_object(input_obj.copy())
+        self.assertIn("foo_bar", result)
+        self.assertNotIn("foo+bar", result)
+        self.assertEqual(result["foo_bar"], "value")
+        self.assertEqual(result["baz"], "qux")
+
+        input_obj = {"foo=bar": "value", "baz": "qux", "permissions": {}}
+        result = resource.create_object(input_obj.copy())
+        self.assertIn("foo_bar", result)
+        self.assertNotIn("foo=bar", result)
+        self.assertEqual(result["foo_bar"], "value")
+        self.assertEqual(result["baz"], "qux")
+
+
+class TestSpecialCharacterKeys(unittest.TestCase):
+    def setUp(self):
+        self.resource = Model()
+        self.resource.storage = MockStorage()
+        self.resource.permission = MockPermission()
+        self.resource.resource_name = "test"
+        self.resource.parent_id = "parent"
+        self.resource.id_field = "id"
+        self.resource.modified_field = "last_modified"
+        self.resource.id_generator = lambda: "generated-id"
+        self.resource._annotate = lambda obj, perm_id: obj
+        self.resource._allow_write = lambda perm_id: None
+
+    def test_create_object_with_allowed_special_char_keys(self):
+        special_keys_obj = {
+            "key-with-dash": "dash",
+            "key#hash": "hash",
+            "key!exclaim": "exclaim",
+            "key*star": "star",
+            "key~tilde": "tilde",
+            "key@at": "at",
+        }
+
+        created = self.resource.create_object(special_keys_obj)
+
+        self.assertIn("key-with-dash", created)
+        self.assertEqual(created["key-with-dash"], "dash")
+
+        self.assertIn("key#hash", created)
+        self.assertEqual(created["key#hash"], "hash")
+
+        self.assertIn("key!exclaim", created)
+        self.assertEqual(created["key!exclaim"], "exclaim")
+
+        self.assertIn("key*star", created)
+        self.assertEqual(created["key*star"], "star")
+
+        self.assertIn("key~tilde", created)
+        self.assertEqual(created["key~tilde"], "tilde")
+
+        self.assertIn("key@at", created)
+        self.assertEqual(created["key@at"], "at")
+
+
+class MockStorage:
+    def create(self, resource_name, parent_id, obj, id_generator, id_field, modified_field):
+        obj["id"] = id_generator()
+        obj["last_modified"] = 1234567890
+        return obj
+
+
+class MockPermission:
+    def replace_object_permissions(self, perm_object_id, permissions):
+        pass
