@@ -258,6 +258,7 @@ class TestCreateObject(unittest.TestCase):
         self.assertEqual(result["baz"], "qux")
 
 
+# Test regex characters
 class TestSpecialCharacterKeys(unittest.TestCase):
     def setUp(self):
         self.resource = Model()

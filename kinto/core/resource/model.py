@@ -283,7 +283,7 @@ class Model:
         :returns: the newly created object.
         :rtype: dict
         """
-        obj = self.replace_dots_in_keys(obj)
+        obj = self.replace_bad_characters_in_keys(obj)
         parent_id = parent_id or self.parent_id
 
         permissions = obj.pop(self.permissions_field, {})
