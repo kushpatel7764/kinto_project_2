@@ -313,6 +313,104 @@ class PostgresqlStorageMigrationTest(unittest.TestCase):
                     sa.text("SELECT from_epoch(:epoch)::TEXT"), {"epoch": epoch}
                 ).scalar()
                 self.assertEqual(result, expected)
+                
+    def test_as_epoch_function1_6_returns_every_10_microsecond(self):
+        self._load_schema("schema/postgresql-storage-1.6.sql")
+
+        # Apply all migrations
+        self.storage.initialize_schema()
+
+        with self.storage.client.connect() as conn:
+            result = conn.execute(
+                sa.text("SELECT as_epoch(TIMESTAMP '2020-01-01 00:00:01')")
+            ).fetchone()
+            new_epoch = result[0]
+
+        # Verify the result matches expected logic
+        self.assertEqual(new_epoch, 100000)
+
+    def test_as_epoch_function1_6_returns_proper_timestamp_value(self):
+        self._load_schema("schema/postgresql-storage-1.6.sql")
+
+        self.storage.initialize_schema()
+
+        with self.storage.client.connect() as conn:
+            result = conn.execute(
+                sa.text("SELECT as_epoch(TIMESTAMP '2024-01-01 00:00:01')")
+            ).fetchone()
+            new_epoch = result[0]
+
+        expected_epoch = 126230401 * 100000
+
+        # Verify the result matches expected logic
+        self.assertEqual(new_epoch, expected_epoch)
+
+    def test_as_epoch_function11_returns_every_10_microsecond(self):
+        self._load_schema("schema/postgresql-storage-11.sql")
+
+        # Apply all migrations
+        self.storage.initialize_schema()
+
+        with self.storage.client.connect() as conn:
+            result = conn.execute(
+                sa.text("SELECT as_epoch(TIMESTAMP '2020-01-01 00:00:01')")
+            ).fetchone()
+            new_epoch = result[0]
+
+        # Verify the result matches expected logic
+        self.assertEqual(new_epoch, 100000)
+
+    def test_as_epoch_function11_returns_proper_timestamp_value(self):
+        self._load_schema("schema/postgresql-storage-11.sql")
+
+        self.storage.initialize_schema()
+
+        with self.storage.client.connect() as conn:
+            result = conn.execute(
+                sa.text("SELECT as_epoch(TIMESTAMP '2024-01-01 00:00:01')")
+            ).fetchone()
+            new_epoch = result[0]
+
+        expected_epoch = 126230401 * 100000
+
+        # Verify the result matches expected logic
+        self.assertEqual(new_epoch, expected_epoch)
+
+    def test_from_epoch_function(self):
+        self._load_schema("schema/postgresql-storage-11.sql")
+
+        self.storage.initialize_schema()
+
+        with self.storage.client.connect() as conn:
+            import datetime
+
+            # Choose a known timestamp
+            original_ts = "2020-01-01 00:00:01"  # 1 second into 2020
+            # Get its epoch using as_epoch
+            old_epoch = conn.execute(
+                sa.text(
+                    """
+                SELECT as_epoch(TIMESTAMP :ts)
+            """
+                ),
+                {"ts": original_ts},
+            ).fetchone()[0]
+
+            # Pass that epoch to from_epoch and get back the timestamp
+            restored_ts = conn.execute(
+                sa.text(
+                    """
+                SELECT from_epoch(:epoch)
+            """
+                ),
+                {"epoch": old_epoch},
+            ).fetchone()[0]
+
+        # Compare original and restored timestamps (may need rounding due to microseconds)
+        self.assertEqual(
+            restored_ts.replace(microsecond=0),
+            datetime.datetime.fromisoformat(original_ts).replace(microsecond=0),
+        )
 
 
 @skip_if_no_postgresql

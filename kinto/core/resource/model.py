@@ -1,3 +1,4 @@
+import re
 import warnings
 
 
@@ -248,6 +249,27 @@ class Model:
         perm_object_id = self.get_permission_object_id(object_id)
         return self._annotate(obj, perm_object_id)
 
+    def replace_bad_characters_in_keys(self, d):
+        """Recursively replace specific characters with underscores in keys."""
+        if not isinstance(d, dict):
+            return d  # Return non-dict objects unchanged
+
+        SPECIAL_CHARS = {".", "=", "+"}
+
+        new_dict = {}
+        for k, v in d.items():
+            if any(c in k for c in SPECIAL_CHARS):
+                new_key = re.sub(r"[.=+]", "_", k)
+            else:
+                new_key = k
+
+            # Recursively process nested dictionaries
+            new_dict[new_key] = (
+                self.replace_bad_characters_in_keys(v) if isinstance(v, dict) else v
+            )
+
+        return new_dict
+
     def create_object(self, obj, parent_id=None):
         """Create an object in the resource.
 
@@ -270,6 +292,7 @@ class Model:
         :returns: the newly created object.
         :rtype: dict
         """
+        obj = self.replace_bad_characters_in_keys(obj)
         parent_id = parent_id or self.parent_id
 
         permissions = obj.pop(self.permissions_field, {})

@@ -783,6 +783,39 @@ class TimestampsTest:
         after = self.storage.resource_timestamp(**self.storage_kw)
         self.assertTrue(before < after)
 
+    def test_all_timestamps_by_parent_id(self):
+        self.storage.create(obj={"id": "main"}, resource_name="bucket", parent_id="")
+        self.storage.create(obj={"id": "cid1"}, resource_name="collection", parent_id="/main")
+        self.storage.create(obj={"id": "cid2"}, resource_name="collection", parent_id="/main")
+        self.storage.create(obj={}, resource_name="record", parent_id="/main/cid2")
+        self.storage.create(obj={}, resource_name="record", parent_id="/main/cid2")
+
+        self.assertEqual(
+            {
+                "": self.storage.resource_timestamp(resource_name="bucket", parent_id=""),
+            },
+            self.storage.all_resources_timestamps(resource_name="bucket"),
+        )
+        self.assertEqual(
+            {
+                "/main": self.storage.resource_timestamp(
+                    resource_name="collection", parent_id="/main"
+                ),
+            },
+            self.storage.all_resources_timestamps(resource_name="collection"),
+        )
+        self.assertEqual(
+            {
+                "/main/cid1": self.storage.resource_timestamp(
+                    resource_name="record", parent_id="/main/cid1"
+                ),
+                "/main/cid2": self.storage.resource_timestamp(
+                    resource_name="record", parent_id="/main/cid2"
+                ),
+            },
+            self.storage.all_resources_timestamps(resource_name="record"),
+        )
+
     @skip_if_ci
     def test_timestamps_are_unique(self):  # pragma: no cover
         obtained = []
@@ -1263,6 +1296,9 @@ class DeletedObjectsTest:
         self.create_object(parent_id="/abc/a", resource_name="c")
         self.create_object(parent_id="/efg", resource_name="c")
 
+        all_timestamps = self.storage.all_resources_timestamps(resource_name="c")
+        self.assertEqual(set(all_timestamps.keys()), {"/abc/a", "/efg"})
+
         before1 = self.storage.resource_timestamp(parent_id="/abc/a", resource_name="c")
         # Different parent_id with object.
         before2 = self.storage.resource_timestamp(parent_id="/efg", resource_name="c")
@@ -1272,11 +1308,15 @@ class DeletedObjectsTest:
         self.storage.delete_all(parent_id="/abc/*", resource_name=None, with_deleted=False)
         self.storage.purge_deleted(parent_id="/abc/*", resource_name=None)
 
+        all_timestamps = self.storage.all_resources_timestamps(resource_name="c")
+        self.assertEqual(set(all_timestamps.keys()), {"/efg", "/ijk"})
+
+        time.sleep(0.002)  # make sure we don't recreate timestamps at same msec.
         after1 = self.storage.resource_timestamp(parent_id="/abc/a", resource_name="c")
         after2 = self.storage.resource_timestamp(parent_id="/efg", resource_name="c")
         after3 = self.storage.resource_timestamp(parent_id="/ijk", resource_name="c")
 
-        self.assertNotEqual(before1, after1)
+        self.assertNotEqual(before1, after1)  # timestamp was removed, it will differ.
         self.assertEqual(before2, after2)
         self.assertEqual(before3, after3)
 
@@ -1301,6 +1341,60 @@ class DeletedObjectsTest:
         self.assertEqual(len(objects), 1)
         count = self.storage.count_all(**self.storage_kw)
         self.assertEqual(count, 0)
+
+    def test_purge_deleted_does_not_support_before_and_max_retained(self):
+        self.assertRaises(
+            ValueError,
+            self.storage.purge_deleted,
+            resource_name="r",
+            parent_id="p",
+            before=42,
+            max_retained=1,
+        )
+
+    def test_purge_deleted_remove_with_max_count_per_collection(self):
+        cid1_kw = dict(parent_id="cid1", resource_name="one")
+        for i in range(5):
+            record = self.create_object(**cid1_kw)
+            self.storage.delete(object_id=record["id"], **cid1_kw)
+        cid2_kw = dict(parent_id="cid2", resource_name="one")
+        for i in range(4):
+            record = self.create_object(**cid2_kw)
+            self.storage.delete(object_id=record["id"], **cid2_kw)
+        cid1_other_kw = dict(parent_id="cid1", resource_name="other")
+        for i in range(5):
+            record = self.create_object(**cid1_other_kw)
+            self.storage.delete(object_id=record["id"], **cid1_other_kw)
+
+        # Consistency checks first.
+        objects_c1_before = self.storage.list_all(include_deleted=True, **cid1_kw)
+        self.assertEqual(len(objects_c1_before), 5)
+        objects_c2_before = self.storage.list_all(include_deleted=True, **cid2_kw)
+        self.assertEqual(len(objects_c2_before), 4)
+        objects_c1_other_before = self.storage.list_all(include_deleted=True, **cid1_other_kw)
+        self.assertEqual(len(objects_c1_other_before), 5)
+
+        num_removed = self.storage.purge_deleted(
+            resource_name="one", parent_id="*", max_retained=3
+        )
+
+        self.assertEqual(num_removed, 3)  # 2 for one/cid1, 1 for one/cid2, 0 for other/cid1
+
+        # It kept 3 tombstones for each resource/parent.
+        objects = self.storage.list_all(include_deleted=True, **cid1_kw)
+        self.assertEqual(len(objects), 3)
+        self.assertEqual(
+            min(obj["last_modified"] for obj in objects), objects_c1_before[2]["last_modified"]
+        )
+
+        objects = self.storage.list_all(include_deleted=True, **cid2_kw)
+        self.assertEqual(len(objects), 3)
+        self.assertNotEqual(
+            min(obj["last_modified"] for obj in objects), objects_c2_before[2]["last_modified"]
+        )
+
+        objects = self.storage.list_all(include_deleted=True, **cid1_other_kw)
+        self.assertEqual(len(objects), 5)
 
     #
     # Sorting

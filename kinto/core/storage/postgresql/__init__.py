@@ -79,7 +79,7 @@ class Storage(StorageBase, MigratorMixin):
 
     # MigratorMixin attributes.
     name = "storage"
-    schema_version = 22
+    schema_version = 23
     schema_file = os.path.join(HERE, "schema.sql")
     migrations_directory = os.path.join(HERE, "migrations")
 
@@ -246,6 +246,36 @@ class Storage(StorageBase, MigratorMixin):
                 obj = create_result.fetchone() or row
 
         return obj.last_epoch
+
+    def all_resources_timestamps(self, resource_name):
+        query = """
+        WITH existing_timestamps AS (
+          -- Timestamp of latest object by parent_id.
+          (
+            SELECT parent_id, MAX(last_modified) AS last_modified
+            FROM objects
+            WHERE resource_name = :resource_name
+            GROUP BY parent_id
+          )
+          -- Timestamp of resources without sub-objects.
+          UNION
+          (
+            SELECT parent_id, last_modified
+            FROM timestamps
+            WHERE resource_name = :resource_name
+          )
+        )
+        SELECT parent_id, MAX(as_epoch(last_modified)) AS last_modified
+          FROM existing_timestamps
+          GROUP BY parent_id
+          ORDER BY last_modified DESC
+        """
+        with self.client.connect(readonly=True) as conn:
+            result = conn.execute(sa.text(query), dict(resource_name=resource_name))
+            rows = result.fetchmany(self._max_fetch_size + 1)
+
+        results = {r[0]: r[1] for r in rows}
+        return results
 
     @deprecate_kwargs({"collection_id": "resource_name", "record": "obj"})
     def create(
@@ -568,6 +598,7 @@ class Storage(StorageBase, MigratorMixin):
         resource_name,
         parent_id,
         before=None,
+        max_retained=None,
         id_field=DEFAULT_ID_FIELD,
         modified_field=DEFAULT_MODIFIED_FIELD,
     ):
@@ -578,9 +609,39 @@ class Storage(StorageBase, MigratorMixin):
               {resource_name_filter}
               {conditions_filter}
         """
+
+        if max_retained is not None:
+            if before is not None:
+                raise ValueError("`before` and `max_retained` are exclusive arguments. Pick one.")
+
+            delete_tombstones = """
+            WITH ranked AS (
+                SELECT
+                    id AS objid,
+                    parent_id,
+                    resource_name,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY parent_id, resource_name
+                        ORDER BY last_modified DESC
+                    ) AS rn
+                FROM objects
+            )
+            DELETE FROM objects
+            WHERE id IN (
+                SELECT objid
+                FROM ranked
+                WHERE
+                    {parent_id_filter}
+                    {resource_name_filter}
+                    AND rn > :max_retained
+            )
+            """
+
         id_field = id_field or self.id_field
         modified_field = modified_field or self.modified_field
-        placeholders = dict(parent_id=parent_id, resource_name=resource_name)
+        placeholders = dict(
+            parent_id=parent_id, resource_name=resource_name, max_retained=max_retained
+        )
         # Safe strings
         safeholders = defaultdict(str)
         # Handle parent_id as a regex only if it contains *

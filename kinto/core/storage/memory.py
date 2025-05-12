@@ -153,6 +153,10 @@ class Storage(MemoryBasedStorage):
             raise exceptions.ReadonlyError(message=error_msg)
         return self.bump_and_store_timestamp(resource_name, parent_id)
 
+    @synchronized
+    def all_resources_timestamps(self, resource_name):
+        return {k: v[resource_name] for k, v in self._timestamps.items() if resource_name in v}
+
     def bump_and_store_timestamp(
         self, resource_name, parent_id, obj=None, modified_field=None, last_modified=None
     ):
@@ -280,22 +284,52 @@ class Storage(MemoryBasedStorage):
         resource_name,
         parent_id,
         before=None,
+        max_retained=None,
         id_field=DEFAULT_ID_FIELD,
         modified_field=DEFAULT_MODIFIED_FIELD,
     ):
+        if max_retained is not None and before is not None:
+            raise ValueError("`before` and `max_retained` are exclusive arguments. Pick one.")
+
         parent_id_match = re.compile(parent_id.replace("*", ".*"))
-        by_parent_id = {
+
+        timestamps_by_parent_id = {
+            pid: resources
+            for pid, resources in self._timestamps.items()
+            if parent_id_match.match(pid)
+        }
+        if resource_name is not None:
+            for pid, resources in timestamps_by_parent_id.items():
+                del self._timestamps[pid][resource_name]
+        else:
+            for pid, resources in timestamps_by_parent_id.items():
+                del self._timestamps[pid]
+
+        num_deleted = 0
+        tombstones_by_parent_id = {
             pid: resources
             for pid, resources in self._cemetery.items()
             if parent_id_match.match(pid)
         }
-        num_deleted = 0
-        for pid, resources in by_parent_id.items():
+        for pid, resources in tombstones_by_parent_id.items():
             if resource_name is not None:
                 resources = {resource_name: resources[resource_name]}
             for resource, resource_objects in resources.items():
                 if before is None:
-                    kept = {}
+                    if max_retained is None:
+                        kept = {}
+                    else:
+                        kept = {
+                            key: value
+                            for i, (key, value) in enumerate(
+                                sorted(
+                                    resource_objects.items(),
+                                    key=lambda i: i[1]["last_modified"],
+                                    reverse=True,
+                                )
+                            )
+                            if i < max_retained
+                        }
                 else:
                     kept = {
                         key: value
