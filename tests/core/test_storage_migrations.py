@@ -313,7 +313,7 @@ class PostgresqlStorageMigrationTest(unittest.TestCase):
                     sa.text("SELECT from_epoch(:epoch)::TEXT"), {"epoch": epoch}
                 ).scalar()
                 self.assertEqual(result, expected)
-                
+
     def test_as_epoch_function1_6_returns_every_10_microsecond(self):
         self._load_schema("schema/postgresql-storage-1.6.sql")
 
